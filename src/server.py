@@ -1,3 +1,4 @@
+"""Server connection for simulator."""
 import socket
 
 from bindings import Bindings

@@ -1,3 +1,5 @@
+"""Bindings class"""
+
 class Bindings:
     """
     This class contains the communication functions.

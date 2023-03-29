@@ -1,3 +1,4 @@
+"""Configuration management."""
 import configparser
 import os
 

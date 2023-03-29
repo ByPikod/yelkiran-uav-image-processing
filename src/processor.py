@@ -1,3 +1,4 @@
+"""Image processing."""
 import datetime
 import os
 
