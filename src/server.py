@@ -3,12 +3,10 @@ import socket
 from bindings import Bindings
 
 
-"""
-Connects to the simulator via socket and sends the command to drop ball.
-"""
-
-
 class Server(Bindings):
+    """
+    Connects to the simulator via socket and sends the command to drop ball.
+    """
 
     socket_client: socket.socket
 

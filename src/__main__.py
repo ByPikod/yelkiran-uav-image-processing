@@ -1,23 +1,27 @@
-from config import get_config
+import logging
+import config as conf
+
 from server import Server
 from bindings import Bindings
 from processor import Processor
 
 if __name__ == "__main__":
 
-    config = get_config()
+    # Configuration
+    config = conf.get_config()
+
+    # Logging
+    if config.get_bool("general.logging"):
+        logging.initialize("logs")
 
     binding: Bindings
 
-    # Check if simulator enabled
-    sim_conf = config["SIMULATOR"]
-    simulator_enabled = sim_conf["enabled"].lower() == "true"
-
-    if simulator_enabled:
+    if config.get_bool("simulator.enabled"):
+        # Try to connect server.
         print("Simulator enabled, trying to connect to the server.")
-        binding = Server(sim_conf["host"], int(sim_conf["port"]))  # Try to connect server.
+        binding = Server(config.get_string("simulator.host"), config.get_int("simulator.port")) 
     else:
         # There should be raspberry pi bindings.
         pass
 
-    processor = Processor(binding, simulator_enabled)
+    processor = Processor(binding, config)

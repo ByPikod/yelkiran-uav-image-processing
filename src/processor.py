@@ -1,32 +1,35 @@
+from configparser import ConfigParser
+
 import cv2
 import numpy as np
 
 from bindings import Bindings
 
 
-"""
-Processor going to call bindings according to processed video.
-"""
-
-
 class Processor:
+    """
+    Processor going to call bindings according to processed video.
+    """
 
     bindings: Bindings
     simulator: bool
 
-    def __init__(self, bindings: Bindings, simulator: bool):
+    def __init__(self, bindings: Bindings, config: ConfigParser):
+        
         self.bindings = bindings
-        self.simulator = simulator
+        self.config = config
+
         try:
             self.process()
         except cv2.error as err:
             print(f"An error has occurred while processing video camera: \n{err}")
 
     def process(self):
+        """Main loop for image processing."""
 
-        vid = cv2.VideoCapture(1 + cv2.CAP_DSHOW)
+        vid = cv2.VideoCapture(int(self.config["GENERAL"]["camera-index"]))
 
-        if self.simulator:
+        if self.config["SIMULATOR"]["enabled"]:
             vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
