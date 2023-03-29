@@ -3,6 +3,7 @@ import datetime
 import os
 
 import logging
+import window
 import config as conf
 
 from server import Server
@@ -29,7 +30,7 @@ class Processor:
     def __init__(self):
 
         # Configuration
-        config = conf.get_config()
+        config = conf.ConfigUtil()
 
         # Unique folder
         self.record_dir = f"recording {datetime.datetime.now().strftime('%d.%m.%Y %H-%M-%S')}"
@@ -63,11 +64,14 @@ class Processor:
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
 
-    def start_loop(self):
+
+    def start_loop(self) -> None:
         """Main loop for image processing."""
 
+        # Get webcam capture
         self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"))
 
+        # Fix size for simulator.
         if self.config.get_bool("simulator.enabled"):
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -77,6 +81,13 @@ class Processor:
         if self.record:
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'XVID'), 30, size)
+
+        # Name window
+        self.win_id = "Yelkiran"
+
+        # Other windows
+        self.c_win = window.ColorWindow(self.config)
+        self.c_win.init()
 
         # Start the loop
         while True:
@@ -89,15 +100,20 @@ class Processor:
         # Destroy all the windows
         cv2.destroyAllWindows()
 
-    def process(self, frame):
+    def process(self, frame) -> bool:
+        """Called each frame for process."""
+        
+        self.c_win.render()
 
         if self.record:
             self.result.write(frame)  # Save video
-
+        
         if self.preview:
-            cv2.imshow('Recording', frame)  # Show video
+            frame = cv2.resize(frame, (640, 360))
+            cv2.imshow(self.win_id, frame)  # Show video
 
-        if cv2.waitKey(5) & 0xFF == ord('q'):
+        key = cv2.waitKey(5)
+        if key & 0xFF == ord('q'):
             return False
 
         return True
