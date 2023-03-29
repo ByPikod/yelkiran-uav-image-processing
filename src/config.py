@@ -8,6 +8,8 @@ def fill_config(conf: configparser.ConfigParser):
     """
     conf["GENERAL"] = {
         "logging": True,
+        "preview": True,
+        "record": True,
         "camera-index": 1
     }
 
@@ -34,9 +36,9 @@ class ConfigUtil:
         You can write "simulator.enabled" instead ["SIMULATOR"]["enabled"]
         """
         current_f = self.config_parser
-        
+
         splitted_locator = locator.split(".")
-        splitted_locator[0].upper()
+        splitted_locator[0] = splitted_locator[0].upper()
 
         for next_f in splitted_locator:
             current_f = current_f[next_f]
