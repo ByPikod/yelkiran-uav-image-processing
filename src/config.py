@@ -9,9 +9,9 @@ def fill_config(conf: configparser.ConfigParser):
     """
 
     conf["OPENCV"] = {
-        "upper_h": 0,
-        "upper_s": 0,
-        "upper_v": 0,
+        "upper_h": 180,
+        "upper_s": 255,
+        "upper_v": 255,
         "lower_h": 0,
         "lower_s": 0,
         "lower_v": 0
