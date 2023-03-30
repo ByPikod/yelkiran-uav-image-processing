@@ -41,7 +41,7 @@ class Processor:
             savelog.initialize(self.record_dir)
 
         # Bindings
-        mode = config.get_string("general.image-source").lower()
+        mode = config.get_string("general.video-source").lower()
         if mode == "simulator":
             # Simulator Mode.
             print("Simulator enabled, trying to connect to the server.")
@@ -71,7 +71,10 @@ class Processor:
         """Main loop for image processing."""
 
         # Get webcam capture
-        self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"))
+        if self.config.get_string("general.video-source"):
+            self.capture = cv2.VideoCapture(self.config.get_string("file.video-path"))
+        else:
+            self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"))
 
         # Fix size for simulator.
         if self.config.get_bool("simulator.enabled"):
@@ -169,23 +172,25 @@ class Processor:
         upper_v.pack(side=tkinter.LEFT)
 
         # Utilities
-        def get_upper_variables():
+        def get_upper_hsv():
             """Upper hsv slider variables."""
             return upper_h.get(), upper_s.get(), upper_v.get()
 
-        def get_lower_variables():
+        def get_lower_hsv():
             """Lower hsv slider variables."""
             return lower_h.get(), lower_s.get(), lower_v.get()
 
         # Listen for events
         def update_upper_canvas(*args):
-            h, s, v = get_upper_variables()
+            h, s, v = get_upper_hsv()
+            rgb = np.array(colorsys.hsv_to_rgb(h / 180, s / 255, v / 255)) * 255
+            rgb = np.uint32(rgb)
+            self.upper_hsv = np.array([h, s, v], np.uint8)
             
-            print(colorsys.hsv_to_rgb(h / 180, s / 255, v / 255))
             upper_hsv_example.itemconfigure(
                 upper_hsv_example_fill, 
                 {
-                    "fill": '#%02x%02x%02x'
+                    "fill": '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
                 }
             )
 
@@ -193,15 +198,36 @@ class Processor:
         upper_s.configure(command=update_upper_canvas)
         upper_v.configure(command=update_upper_canvas)
 
+        def update_lower_canvas(*args):
+            h, s, v = get_lower_hsv()
+            rgb = np.array(colorsys.hsv_to_rgb(h / 180, s / 255, v / 255)) * 255
+            rgb = np.uint32(rgb)
+            self.lower_hsv = np.array([h, s, v], np.uint8)
+            
+            lower_hsv_example.itemconfigure(
+                lower_hsv_example_fill, 
+                {
+                    "fill": '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
+                }
+            )
+
+        lower_h.configure(command=update_lower_canvas)
+        lower_s.configure(command=update_lower_canvas)
+        lower_v.configure(command=update_lower_canvas)
+
+        # Initial update
+        update_upper_canvas()
+        update_lower_canvas()
+
         # Buttons
         def save():
             """Save changes."""
-            h, s, v = get_upper_variables()
+            h, s, v = get_upper_hsv()
             self.config.set_field("opencv.upper_h", str(h))
             self.config.set_field("opencv.upper_s", str(s))
             self.config.set_field("opencv.upper_v", str(v))
             
-            h, s, v = lower_h.get(), lower_s.get(), lower_v.get()
+            h, s, v = get_lower_hsv()
             self.config.set_field("opencv.lower_h", str(h))
             self.config.set_field("opencv.lower_s", str(s))
             self.config.set_field("opencv.lower_v", str(v))
@@ -228,24 +254,44 @@ class Processor:
         
         def process():
             """Called each frame for process."""
-            ret, frame = self.capture.read()
 
-            if self.record:
-                self.result.write(frame)  # Save video
-            
-            if self.preview:
-
-                # Orginal Capture
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (640, 360))
-                frame = cv2.hconcat([frame, frame])
+            def task():
+                ret, frame = self.capture.read()
                 
-                img = PIL.Image.fromarray(frame)
-                imgtk = PIL.ImageTk.PhotoImage(image=img)
+                if not ret:
+                    self.capture.set(1, 0)
+                    return
 
-                cap_canvas.imgtk = imgtk
-                cap_canvas.configure(image=imgtk)
-                cap_canvas.after(10, process)
+                if self.record:
+                    self.result.write(frame)  # Save video
+                
+                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                mask = cv2.inRange(frame_hsv, self.lower_hsv, self.upper_hsv)
+                output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
+                output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
+
+                if self.preview:
+                    
+                    # Resize
+                    frame = cv2.resize(frame, (640, 360))
+                    output = cv2.resize(output, (640, 360))
+
+                    # Color convert
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                    # Final Output
+                    frame = cv2.hconcat([frame, output])
+                    
+                    img = PIL.Image.fromarray(frame)
+                    imgtk = PIL.ImageTk.PhotoImage(image=img)
+
+                    cap_canvas.imgtk = imgtk
+                    cap_canvas.configure(image=imgtk)
+
+            # Loop
+            task()
+            cap_canvas.after(5, process)
+            
 
         process()
         self.app.mainloop()

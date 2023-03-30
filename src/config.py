@@ -18,7 +18,7 @@ def fill_config(conf: configparser.ConfigParser):
     }
 
     conf["GENERAL"] = {
-        "image-source": "simulator",
+        "video-source": "simulator",
         "camera-index": 1,
         "logging": True,
         "preview": True,
@@ -30,7 +30,7 @@ def fill_config(conf: configparser.ConfigParser):
     }
 
     conf["FILE"] = {
-        "video-path": ""
+        "video-path": "source.mp4"
     }
 
     conf["SIMULATOR"] = {
