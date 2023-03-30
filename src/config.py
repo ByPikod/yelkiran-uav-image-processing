@@ -14,7 +14,11 @@ def fill_config(conf: configparser.ConfigParser):
         "upper_v": 255,
         "lower_h": 0,
         "lower_s": 0,
-        "lower_v": 0
+        "lower_v": 0,
+        "collision-box-width": 100,
+        "collision-box-height": 100,
+        "collision-box-horizontal-offset": 0,
+        "collision-box-vertical-offset": 0,
     }
 
     conf["GENERAL"] = {
@@ -22,7 +26,8 @@ def fill_config(conf: configparser.ConfigParser):
         "camera-index": 1,
         "logging": True,
         "preview": True,
-        "record": True
+        "record": True,
+        "record-dir": "./"
     }
 
     conf["RASPBERRY"] = {

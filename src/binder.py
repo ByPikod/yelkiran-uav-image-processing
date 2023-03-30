@@ -10,9 +10,6 @@ class Bindings:
     def open_package_door(self):
         """Binding for activate servo motor and open the package door."""
 
-    def close_package_door(self):
-        """Binding for activate servo motor and close the package door."""
-
 
 class Server(Bindings):
     """

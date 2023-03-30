@@ -9,6 +9,7 @@ import PIL.ImageTk
 import numpy as np
 import cv2
 
+import utilities
 import savelog
 import binder
 import config as conf
@@ -34,7 +35,12 @@ class Processor:
         config = conf.ConfigUtil()
 
         # Unique folder
-        self.record_dir = f"recording {datetime.datetime.now().strftime('%d.%m.%Y %H-%M-%S')}"
+        self.record_dir = os.path.join(
+            config.get_string('general.record-dir'),
+            f"recording {datetime.datetime.now().strftime('%d.%m.%Y %H-%M-%S')}"
+        )
+        if not os.path.exists(self.record_dir):
+            os.makedirs(self.record_dir)
 
         # Logging
         if config.get_bool("general.logging"):
@@ -45,13 +51,13 @@ class Processor:
         if mode == "simulator":
             # Simulator Mode.
             print("Simulator enabled, trying to connect to the server.")
-            self.binding = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
+            self.bindings = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
         elif mode == "file":
             # File Mode
-            self.binding = binder.File()
+            self.bindings = binder.File()
         else:
             # Raspberry Pi Mode
-            self.binding = binder.Raspberry()
+            self.bindings = binder.Raspberry()
 
         self.config = config
         self.preview = self.config.get_bool("general.preview")
@@ -71,13 +77,13 @@ class Processor:
         """Main loop for image processing."""
 
         # Get webcam capture
-        if self.config.get_string("general.video-source"):
+        if self.config.get_string("general.video-source") == "file":
             self.capture = cv2.VideoCapture(self.config.get_string("file.video-path"))
         else:
             self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"))
 
         # Fix size for simulator.
-        if self.config.get_bool("simulator.enabled"):
+        if self.config.get_string("general.video-source") == "simulator":
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
@@ -97,6 +103,8 @@ class Processor:
 
         hsv_panel = tkinter.Frame(self.app)
         hsv_panel.pack(padx=20, pady=20)
+        col_box_panel = tkinter.Frame(self.app)
+        col_box_panel.pack(side=tkinter.TOP, padx=20, pady=20)
         buttons_panel = tkinter.Frame(self.app)
         buttons_panel.pack(padx=20, pady=20)
 
@@ -219,6 +227,74 @@ class Processor:
         update_upper_canvas()
         update_lower_canvas()
 
+        # Collision Box Configuration
+        col_box_size_panel = tkinter.Frame(col_box_panel)
+        col_box_size_panel.pack(side=tkinter.LEFT)
+        col_box_offset_panel = tkinter.Frame(col_box_panel)
+        col_box_offset_panel.pack(side=tkinter.RIGHT)
+
+        # Width input
+        col_box_width_panel = tkinter.Frame(col_box_size_panel)
+        col_box_width_panel.pack()
+        tkinter.Label(col_box_width_panel, text="Width: ").pack(side=tkinter.LEFT)
+        col_box_width_sb = tkinter.Spinbox(col_box_width_panel, from_=-300, to=300)
+        col_box_width_sb.pack()
+        
+        # Height input
+        col_box_height_panel = tkinter.Frame(col_box_size_panel)
+        col_box_height_panel.pack()
+        tkinter.Label(col_box_height_panel, text="Height: ").pack(side=tkinter.LEFT)
+        col_box_height_sb = tkinter.Spinbox(col_box_height_panel, from_=-300, to=300)
+        col_box_height_sb.pack()
+
+        # Horizontal offset
+        col_box_horizontal_offset_panel = tkinter.Frame(col_box_offset_panel)
+        col_box_horizontal_offset_panel.pack()
+        tkinter.Label(col_box_horizontal_offset_panel, text="Horizontal Offset: ").pack(side=tkinter.LEFT)
+        col_box_horizontal_offset_sb = tkinter.Spinbox(col_box_horizontal_offset_panel, from_=-300, to=300)
+        col_box_horizontal_offset_sb.pack()
+
+        # Vertical offset
+        col_box_vertical_offset_panel = tkinter.Frame(col_box_offset_panel)
+        col_box_vertical_offset_panel.pack()
+        tkinter.Label(col_box_vertical_offset_panel, text="Vertical Offset: ").pack(side=tkinter.LEFT)
+        col_box_vertical_offset_sb = tkinter.Spinbox(col_box_vertical_offset_panel, from_=-300, to=300)
+        col_box_vertical_offset_sb.pack()
+
+        def update_collision_box_data():
+            """Set global collision data."""
+            self.box_collision_width,\
+            self.box_collision_height, \
+            self.box_collision_horizontal, \
+            self.box_collision_vertical \
+            = get_collision_box_data()
+
+        def get_collision_box_data() -> tuple[int, int, int, int]:
+            """Returns collision box data"""
+            return \
+                int(col_box_width_sb.get()) if col_box_width_sb.get().lstrip('-').isdigit() else 0, \
+                int(col_box_height_sb.get()) if col_box_height_sb.get().lstrip('-').isdigit() else 0, \
+                int(col_box_horizontal_offset_sb.get()) if col_box_horizontal_offset_sb.get().lstrip('-').isdigit() else 0, \
+                int(col_box_vertical_offset_sb.get()) if col_box_vertical_offset_sb.get().lstrip('-').isdigit() else 0
+
+        def fill_collision_box_data() -> None:
+            """Fills collision box data according to config."""
+            col_box_width_sb.delete(0, "end")
+            col_box_height_sb.delete(0, "end")
+            col_box_horizontal_offset_sb.delete(0, "end")
+            col_box_vertical_offset_sb.delete(0, "end")
+            col_box_width_sb.insert(0, self.config.get_string("opencv.collision-box-width"))
+            col_box_height_sb.insert(0, self.config.get_string("opencv.collision-box-height"))
+            col_box_horizontal_offset_sb.insert(0, self.config.get_string("opencv.collision-box-horizontal-offset"))
+            col_box_vertical_offset_sb.insert(0, self.config.get_string("opencv.collision-box-vertical-offset"))
+
+        fill_collision_box_data()
+        update_collision_box_data()
+        col_box_width_sb.configure(command=update_collision_box_data)
+        col_box_height_sb.configure(command=update_collision_box_data)
+        col_box_horizontal_offset_sb.configure(command=update_collision_box_data)
+        col_box_vertical_offset_sb.configure(command=update_collision_box_data)
+
         # Buttons
         def save():
             """Save changes."""
@@ -232,6 +308,12 @@ class Processor:
             self.config.set_field("opencv.lower_s", str(s))
             self.config.set_field("opencv.lower_v", str(v))
 
+            width, height, horizontal, vertical = get_collision_box_data()
+            self.config.set_field("opencv.collision-box-width", str(width))
+            self.config.set_field("opencv.collision-box-height", str(height))
+            self.config.set_field("opencv.collision-box-horizontal-offset", str(horizontal))
+            self.config.set_field("opencv.collision-box-vertical-offset", str(vertical))
+
             self.config.save()
 
         def discard():
@@ -242,6 +324,7 @@ class Processor:
             lower_h.set(self.config.get_int("opencv.lower_h"))
             lower_s.set(self.config.get_int("opencv.lower_s"))
             lower_v.set(self.config.get_int("opencv.lower_v"))
+            fill_collision_box_data()
 
         def quit_command():
             self.app.quit()
@@ -250,28 +333,86 @@ class Processor:
         tkinter.Button(buttons_panel, text="Discard", command=discard).pack(side=tkinter.LEFT, padx=5)
         tkinter.Button(buttons_panel, text="Quit", command=quit_command).pack(side=tkinter.LEFT, padx=5)
 
-        # Start the loop
-        
         def process():
-            """Called each frame for process."""
-
-            def task():
+                
                 ret, frame = self.capture.read()
                 
                 if not ret:
                     self.capture.set(1, 0)
                     return
-
-                if self.record:
-                    self.result.write(frame)  # Save video
                 
+                frame_h, frame_w = frame.shape[:2]
+                
+                box_start_x, \
+                box_start_y, \
+                box_end_x, \
+                box_end_y = \
+                int(frame_w / 2 - self.box_collision_width / 2 + self.box_collision_horizontal), \
+                int(frame_h / 2 - self.box_collision_height / 2 + self.box_collision_vertical), \
+                int(frame_w / 2 + self.box_collision_width / 2 + self.box_collision_horizontal), \
+                int(frame_h / 2 + self.box_collision_height / 2 + self.box_collision_vertical)
+                
+                # Create the mask
                 frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-                mask = cv2.inRange(frame_hsv, self.lower_hsv, self.upper_hsv)
-                output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
-                output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
+                mask = cv2.inRange(frame_hsv, self.lower_hsv, self.upper_hsv) 
+                
+                # Find contours.
+                contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-                if self.preview:
+                # Calculate center of the color
+                cx, cy = 0, 0
+                if len(contours) > 0:
+                    c = max(contours, key=cv2.contourArea)
+                    cmoments = cv2.moments(c)
+                    try:
+                        cx, cy = \
+                            int(cmoments['m10'] / cmoments['m00']), \
+                            int(cmoments['m01'] / cmoments['m00'])
+                    except ZeroDivisionError:
+                        return
+                
+                # If detected object is colliding with the box.
+                collision_state = (
+                    cx > box_start_x and
+                    cx < box_end_x and
+                    cy > box_start_y and
+                    cy < box_end_y
+                )
+
+                # Drop the ball
+                if collision_state:
+                    if not self.collided:
+                        self.collided = True
+                        self.bindings.open_package_door()
+                else:
+                    self.collided = False
+
+                if self.preview or self.record:
+                        
+                    # Special visualizations for preview
+                    output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
+                    output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
+
+                    if len(contours) > 0:
+                        # cv2.drawContours(output, contours, 0, (255, 255, 255), 2)
+                        cv2.circle(frame, (cx, cy), 10, (255, 255, 255), -1)
+                        cv2.line(frame, (cx, 0), (cx, cy - 40), (255, 255, 255), 3)
+                        cv2.line(frame, (cx, frame_h), (cx, cy + 40), (255, 255, 255), 3)
+                        cv2.line(frame, (0, cy), (cx - 40, cy), (255, 255, 255), 3)
+                        cv2.line(frame, (frame_w, cy), (cx + 40, cy), (255, 255, 255), 3)
                     
+                    collision_color = (0, 255, 0) if collision_state else (255, 255, 255)
+                    utilities.draw_square(
+                        frame, 
+                        (box_start_x, box_start_y), 
+                        (box_end_x, box_end_y),
+                        collision_color,
+                        3
+                    )
+
+                    # Record Video
+                    self.result.write(frame)
+
                     # Resize
                     frame = cv2.resize(frame, (640, 360))
                     output = cv2.resize(output, (640, 360))
@@ -280,19 +421,29 @@ class Processor:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
                     # Final Output
-                    frame = cv2.hconcat([frame, output])
+                    final_output = cv2.hconcat([frame, output])
                     
-                    img = PIL.Image.fromarray(frame)
+                    img = PIL.Image.fromarray(final_output)
                     imgtk = PIL.ImageTk.PhotoImage(image=img)
 
                     cap_canvas.imgtk = imgtk
                     cap_canvas.configure(image=imgtk)
 
-            # Loop
-            task()
-            cap_canvas.after(5, process)
-            
+        # Start the loop
+        if self.config.get_bool("general.preview"):
 
-        process()
-        self.app.mainloop()
+            def mainloop():
+                """Called each frame for process."""
+                process()
+                cap_canvas.after(5, mainloop)
+
+            mainloop()
+            self.app.mainloop()
+
+        else:
+
+            while True:
+                process()
+                cv2.waitKey(5)
+
         self.capture.release()
