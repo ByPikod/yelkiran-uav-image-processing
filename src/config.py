@@ -18,14 +18,22 @@ def fill_config(conf: configparser.ConfigParser):
     }
 
     conf["GENERAL"] = {
+        "image-source": "simulator",
+        "camera-index": 1,
         "logging": True,
         "preview": True,
-        "record": True,
-        "camera-index": 1
+        "record": True
+    }
+
+    conf["RASPBERRY"] = {
+
+    }
+
+    conf["FILE"] = {
+        "video-path": ""
     }
 
     conf["SIMULATOR"] = {
-        "enabled": False,
         "host": "127.0.0.1",
         "port": 5710
     }
@@ -54,7 +62,7 @@ class ConfigUtil:
         # Write data
         self.save()
 
-    def get_string(self, locator: str) -> str | None:
+    def get_string(self, locator: str) -> str:
         """
         Allows you to retrieve config data quickly.
         You can write "simulator.enabled" instead ["SIMULATOR"]["enabled"]
@@ -64,19 +72,19 @@ class ConfigUtil:
 
         return self.config_parser[splitted_locator[0]][splitted_locator[1]]
 
-    def get_bool(self, field: str) -> bool | None:
+    def get_bool(self, field: str) -> bool:
         """Returns bool data from config."""
 
         return self.get_string(field).lower() == "true"
 
-    def get_int(self, field: str) -> int | None:
+    def get_int(self, field: str) -> int:
         """Returns int data from config."""
 
         try:
             return int(self.get_string(field))
         except ValueError:
             return 0
-    
+
     def set_field(self, locator: str, value: any) -> None:
         """
         Allows you to write config data quickly.
@@ -86,7 +94,7 @@ class ConfigUtil:
         splitted_locator[0] = splitted_locator[0].upper()
 
         self.config_parser[splitted_locator[0]][splitted_locator[1]] = value
-    
+
     def save(self) -> None:
         """Write config."""
 

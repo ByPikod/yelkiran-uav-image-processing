@@ -4,15 +4,14 @@ import datetime
 import tkinter
 import os
 
-import savelog
-import config as conf
-
-from server import Server
-from bindings import Bindings
-
-import PIL.Image, PIL.ImageTk
+import PIL.Image
+import PIL.ImageTk
 import numpy as np
 import cv2
+
+import savelog
+import binder
+import config as conf
 
 
 class Processor:
@@ -20,7 +19,7 @@ class Processor:
     Processor going to call bindings according to processed video.
     """
 
-    bindings: Bindings
+    bindings: binder.Bindings
     config: conf.ConfigUtil
 
     preview: bool
@@ -42,13 +41,17 @@ class Processor:
             savelog.initialize(self.record_dir)
 
         # Bindings
-        if not config.get_bool("simulator.enabled"):
-            # There should be raspberry pi bindings.
-            pass
-        else:
-            # Try to connect server.
+        mode = config.get_string("general.image-source").lower()
+        if mode == "simulator":
+            # Simulator Mode.
             print("Simulator enabled, trying to connect to the server.")
-            self.binding = Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
+            self.binding = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
+        elif mode == "file":
+            # File Mode
+            self.binding = binder.File()
+        else:
+            # Raspberry Pi Mode
+            self.binding = binder.Raspberry()
 
         self.config = config
         self.preview = self.config.get_bool("general.preview")
@@ -214,12 +217,12 @@ class Processor:
             lower_s.set(self.config.get_int("opencv.lower_s"))
             lower_v.set(self.config.get_int("opencv.lower_v"))
 
-        def quit():
+        def quit_command():
             self.app.quit()
 
         tkinter.Button(buttons_panel, text="Save Changes", command=save).pack(side=tkinter.LEFT, padx=5)
         tkinter.Button(buttons_panel, text="Discard", command=discard).pack(side=tkinter.LEFT, padx=5)
-        tkinter.Button(buttons_panel, text="Quit", command=quit).pack(side=tkinter.LEFT, padx=5)
+        tkinter.Button(buttons_panel, text="Quit", command=quit_command).pack(side=tkinter.LEFT, padx=5)
 
         # Start the loop
         
