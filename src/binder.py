@@ -1,5 +1,8 @@
 """Bindings class"""
 import socket
+import pigpio
+from gpiozero import Servo
+from time import sleep
 
 class Bindings:
     """
@@ -45,5 +48,9 @@ class Raspberry(Bindings):
     Raspberry pi connector.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self):        
+        self.servo = Servo(17)
+        self.servo.max()
+    
+    def open_package_door(self):
+        self.servo.min()
