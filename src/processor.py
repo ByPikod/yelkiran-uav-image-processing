@@ -72,7 +72,6 @@ class Processor:
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
 
-
     def start_loop(self) -> None:
         """Main loop for image processing."""
 
@@ -92,12 +91,12 @@ class Processor:
         if self.record:
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'XVID'), 30, size)
-    
+
         # Window
         self.app = tkinter.Tk()
         self.app.title("Yelkiran UAV - Image Processing - Preview")
         self.app.bind("<Escape>", lambda e: self.app.quit())
-        
+
         cap_canvas = tkinter.Label(self.app)
         cap_canvas.pack()
 
@@ -107,7 +106,6 @@ class Processor:
         col_box_panel.pack(side=tkinter.TOP, padx=20, pady=20)
         buttons_panel = tkinter.Frame(self.app)
         buttons_panel.pack(padx=20, pady=20)
-
 
         # Lower HSV Panel
         lower_hsv_panel = tkinter.Frame(hsv_panel)
@@ -120,14 +118,14 @@ class Processor:
         lower_h = tkinter.Scale(lower_h_panel, from_=0, to=180)
         lower_h.set(self.config.get_int("opencv.lower_h"))
         lower_h.pack()
-        
+
         lower_s_panel = tkinter.Frame(lower_hsv_panel)
         lower_s_panel.pack(side=tkinter.LEFT)
         tkinter.Label(lower_s_panel, text="Saturation").pack()
         lower_s = tkinter.Scale(lower_s_panel, from_=0, to=255)
         lower_s.set(self.config.get_int("opencv.lower_s"))
         lower_s.pack()
-        
+
         lower_v_panel = tkinter.Frame(lower_hsv_panel)
         lower_v_panel.pack(side=tkinter.LEFT)
         tkinter.Label(lower_v_panel, text="Value").pack()
@@ -139,7 +137,7 @@ class Processor:
         lower_hsv_example = tkinter.Canvas(hsv_panel, width=200, height=100)
         lower_hsv_example.pack(side=tkinter.LEFT, fill=tkinter.Y, expand=True, padx=(10, 0))
         lower_hsv_example_fill = lower_hsv_example.create_rectangle(
-            0, 0, 
+            0, 0,
             400, 400,
             fill='#000'
         )
@@ -148,7 +146,7 @@ class Processor:
         upper_hsv_example = tkinter.Canvas(hsv_panel, width=200, height=100)
         upper_hsv_example.pack(side=tkinter.LEFT, fill=tkinter.Y, expand=True, padx=(0, 10))
         upper_hsv_example_fill = upper_hsv_example.create_rectangle(
-            0, 0, 
+            0, 0,
             400, 400,
             fill='#000'
         )
@@ -164,14 +162,14 @@ class Processor:
         upper_h = tkinter.Scale(upper_h_panel, from_=0, to=180)
         upper_h.set(self.config.get_int("opencv.upper_h"))
         upper_h.pack()
-        
+
         upper_s_panel = tkinter.Frame(upper_hsv_panel)
         upper_s_panel.pack(side=tkinter.LEFT)
         tkinter.Label(upper_s_panel, text="Saturation").pack()
         upper_s = tkinter.Scale(upper_s_panel, from_=0, to=255)
         upper_s.set(self.config.get_int("opencv.upper_s"))
         upper_s.pack()
-        
+
         upper_v_panel = tkinter.Frame(upper_hsv_panel)
         upper_v_panel.pack(side=tkinter.LEFT)
         tkinter.Label(upper_v_panel, text="Value").pack()
@@ -194,9 +192,9 @@ class Processor:
             rgb = np.array(colorsys.hsv_to_rgb(h / 180, s / 255, v / 255)) * 255
             rgb = np.uint32(rgb)
             self.upper_hsv = np.array([h, s, v], np.uint8)
-            
+
             upper_hsv_example.itemconfigure(
-                upper_hsv_example_fill, 
+                upper_hsv_example_fill,
                 {
                     "fill": '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
                 }
@@ -211,9 +209,9 @@ class Processor:
             rgb = np.array(colorsys.hsv_to_rgb(h / 180, s / 255, v / 255)) * 255
             rgb = np.uint32(rgb)
             self.lower_hsv = np.array([h, s, v], np.uint8)
-            
+
             lower_hsv_example.itemconfigure(
-                lower_hsv_example_fill, 
+                lower_hsv_example_fill,
                 {
                     "fill": '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
                 }
@@ -239,7 +237,7 @@ class Processor:
         tkinter.Label(col_box_width_panel, text="Width: ").pack(side=tkinter.LEFT)
         col_box_width_sb = tkinter.Spinbox(col_box_width_panel, from_=-300, to=300)
         col_box_width_sb.pack()
-        
+
         # Height input
         col_box_height_panel = tkinter.Frame(col_box_size_panel)
         col_box_height_panel.pack()
@@ -263,19 +261,21 @@ class Processor:
 
         def update_collision_box_data():
             """Set global collision data."""
-            self.box_collision_width,\
-            self.box_collision_height, \
-            self.box_collision_horizontal, \
-            self.box_collision_vertical \
-            = get_collision_box_data()
+            self.box_collision_width, \
+                self.box_collision_height, \
+                self.box_collision_horizontal, \
+                self.box_collision_vertical \
+                = get_collision_box_data()
 
         def get_collision_box_data() -> tuple[int, int, int, int]:
             """Returns collision box data"""
             return \
                 int(col_box_width_sb.get()) if col_box_width_sb.get().lstrip('-').isdigit() else 0, \
-                int(col_box_height_sb.get()) if col_box_height_sb.get().lstrip('-').isdigit() else 0, \
-                int(col_box_horizontal_offset_sb.get()) if col_box_horizontal_offset_sb.get().lstrip('-').isdigit() else 0, \
-                int(col_box_vertical_offset_sb.get()) if col_box_vertical_offset_sb.get().lstrip('-').isdigit() else 0
+                    int(col_box_height_sb.get()) if col_box_height_sb.get().lstrip('-').isdigit() else 0, \
+                    int(col_box_horizontal_offset_sb.get()) if col_box_horizontal_offset_sb.get().lstrip(
+                        '-').isdigit() else 0, \
+                    int(col_box_vertical_offset_sb.get()) if col_box_vertical_offset_sb.get().lstrip(
+                        '-').isdigit() else 0
 
         def fill_collision_box_data() -> None:
             """Fills collision box data according to config."""
@@ -302,7 +302,7 @@ class Processor:
             self.config.set_field("opencv.upper_h", str(h))
             self.config.set_field("opencv.upper_s", str(s))
             self.config.set_field("opencv.upper_v", str(v))
-            
+
             h, s, v = get_lower_hsv()
             self.config.set_field("opencv.lower_h", str(h))
             self.config.set_field("opencv.lower_s", str(s))
@@ -334,100 +334,99 @@ class Processor:
         tkinter.Button(buttons_panel, text="Quit", command=quit_command).pack(side=tkinter.LEFT, padx=5)
 
         def process():
-                
-                ret, frame = self.capture.read()
-                
-                if not ret:
-                    self.capture.set(1, 0)
-                    return
-                
-                frame_h, frame_w = frame.shape[:2]
-                
-                box_start_x, \
+
+            ret, frame = self.capture.read()
+
+            if not ret:
+                self.capture.set(1, 0)
+                return
+
+            frame_h, frame_w = frame.shape[:2]
+
+            box_start_x, \
                 box_start_y, \
                 box_end_x, \
                 box_end_y = \
                 int(frame_w / 2 - self.box_collision_width / 2 + self.box_collision_horizontal), \
-                int(frame_h / 2 - self.box_collision_height / 2 + self.box_collision_vertical), \
-                int(frame_w / 2 + self.box_collision_width / 2 + self.box_collision_horizontal), \
-                int(frame_h / 2 + self.box_collision_height / 2 + self.box_collision_vertical)
-                
-                # Create the mask
-                frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-                mask = cv2.inRange(frame_hsv, self.lower_hsv, self.upper_hsv) 
-                
-                # Find contours.
-                contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    int(frame_h / 2 - self.box_collision_height / 2 + self.box_collision_vertical), \
+                    int(frame_w / 2 + self.box_collision_width / 2 + self.box_collision_horizontal), \
+                    int(frame_h / 2 + self.box_collision_height / 2 + self.box_collision_vertical)
 
-                # Calculate center of the color
-                cx, cy = 0, 0
-                if len(contours) > 0:
-                    c = max(contours, key=cv2.contourArea)
-                    cmoments = cv2.moments(c)
-                    try:
-                        cx, cy = \
-                            int(cmoments['m10'] / cmoments['m00']), \
+            # Create the mask
+            frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(frame_hsv, self.lower_hsv, self.upper_hsv)
+
+            # Find contours.
+            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Calculate center of the color
+            cx, cy = 0, 0
+            if len(contours) > 0:
+                c = max(contours, key=cv2.contourArea)
+                cmoments = cv2.moments(c)
+                try:
+                    cx, cy = \
+                        int(cmoments['m10'] / cmoments['m00']), \
                             int(cmoments['m01'] / cmoments['m00'])
-                    except ZeroDivisionError:
-                        return
-                
-                # If detected object is colliding with the box.
-                collision_state = (
-                    cx > box_start_x and
-                    cx < box_end_x and
-                    cy > box_start_y and
-                    cy < box_end_y
+                except ZeroDivisionError:
+                    return
+
+            # If detected object is colliding with the box.
+            collision_state = (
+                    box_start_x < cx < box_end_x and
+                    box_start_y < cy < box_end_y
+            )
+
+            # Drop the ball
+            if collision_state:
+                if not self.collided:
+                    self.collided = True
+                    self.bindings.open_package_door()
+            else:
+                self.collided = False
+
+            if self.preview or self.record:
+
+                # Special visualizations for preview
+                output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
+                output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
+
+                if len(contours) > 0:
+                    # cv2.drawContours(output, contours, 0, (255, 255, 255), 2)
+                    cv2.circle(frame, (cx, cy), 10, (255, 255, 255), -1)
+                    cv2.line(frame, (cx, 0), (cx, cy - 40), (255, 255, 255), 3)
+                    cv2.line(frame, (cx, frame_h), (cx, cy + 40), (255, 255, 255), 3)
+                    cv2.line(frame, (0, cy), (cx - 40, cy), (255, 255, 255), 3)
+                    cv2.line(frame, (frame_w, cy), (cx + 40, cy), (255, 255, 255), 3)
+
+                collision_color = (0, 255, 0) if collision_state else (255, 255, 255)
+                utilities.draw_square(
+                    frame,
+                    (box_start_x, box_start_y),
+                    (box_end_x, box_end_y),
+                    collision_color,
+                    3
                 )
 
-                # Drop the ball
-                if collision_state:
-                    if not self.collided:
-                        self.collided = True
-                        self.bindings.open_package_door()
-                else:
-                    self.collided = False
-
-                if self.preview or self.record:
-                        
-                    # Special visualizations for preview
-                    output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
-                    output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
-
-                    if len(contours) > 0:
-                        # cv2.drawContours(output, contours, 0, (255, 255, 255), 2)
-                        cv2.circle(frame, (cx, cy), 10, (255, 255, 255), -1)
-                        cv2.line(frame, (cx, 0), (cx, cy - 40), (255, 255, 255), 3)
-                        cv2.line(frame, (cx, frame_h), (cx, cy + 40), (255, 255, 255), 3)
-                        cv2.line(frame, (0, cy), (cx - 40, cy), (255, 255, 255), 3)
-                        cv2.line(frame, (frame_w, cy), (cx + 40, cy), (255, 255, 255), 3)
-                    
-                    collision_color = (0, 255, 0) if collision_state else (255, 255, 255)
-                    utilities.draw_square(
-                        frame, 
-                        (box_start_x, box_start_y), 
-                        (box_end_x, box_end_y),
-                        collision_color,
-                        3
-                    )
-
-                    # Record Video
+                # Record Video
+                if self.record:
                     self.result.write(frame)
 
-                    # Resize
-                    frame = cv2.resize(frame, (640, 360))
-                    output = cv2.resize(output, (640, 360))
+                # Resize
+                frame = cv2.resize(frame, (640, 360))
+                output = cv2.resize(output, (640, 360))
 
-                    # Color convert
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Color convert
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                    # Final Output
-                    final_output = cv2.hconcat([frame, output])
-                    
-                    img = PIL.Image.fromarray(final_output)
-                    imgtk = PIL.ImageTk.PhotoImage(image=img)
+                # Final Output
+                final_output = cv2.hconcat([frame, output])
 
-                    cap_canvas.imgtk = imgtk
-                    cap_canvas.configure(image=imgtk)
+                img = PIL.Image.fromarray(final_output)
+                imgtk = PIL.ImageTk.PhotoImage(image=img)
+
+                cap_canvas.imgtk = imgtk
+                cap_canvas.configure(image=imgtk)
 
         # Start the loop
         if self.config.get_bool("general.preview"):
