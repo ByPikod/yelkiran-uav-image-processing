@@ -46,31 +46,59 @@ class Processor:
         self.logging = config.get_bool("general.logging")
         
         # Unique folder
-        self.record_dir = os.path.join(
+        self.record_dir = os.path.abspath(os.path.join(
             config.get_string('general.record-dir'),
             f"recording {datetime.datetime.now().strftime('%d.%m.%Y %H-%M-%S')}"
-        )
+        ))
         if (
             not os.path.exists(self.record_dir) and
             (self.logging or self.record)
         ): os.makedirs(self.record_dir)
-
+        
         # Logging
         if self.logging:
             savelog.initialize(self.record_dir)
 
+        print(f"""Information:
+Output directory: {self.record_dir}
+Preview:\t{'Enabled' if self.preview else 'Disabled'}
+Recording:\t{'Enabled' if self.record else 'Disabled'}
+Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
+        )
+        
         # Bindings
         mode = config.get_string("general.video-source").lower()
         if mode == "simulator":
             # Simulator Mode.
-            print("Simulator enabled, trying to connect to the server.")
+            print("Binder is, Simulator")
+            print("Connecting to the server...")
             self.bindings = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
         elif mode == "file":
             # File Mode
-            self.bindings = binder.File()
+            print("Binder is, Free")
+            self.bindings = binder.Bindings()
         else:
             # Raspberry Pi Mode
+            print("Binder is, Raspberry")
             self.bindings = binder.Raspberry()
+
+        # Get webcam capture
+        if self.config.get_string("general.video-source") == "file":
+            src_video_path = self.config.get_string("file.video-path")
+            print(f"Capture initializing with file #{src_video_path}")
+            self.capture = cv2.VideoCapture(src_video_path)
+        else:
+            cam = self.config.get_int("general.camera-index")
+            print(f"Capture initializing with video input #{cam}")
+            self.capture = cv2.VideoCapture(cam)
+            if self.capture.isOpened(): print("Capture opened!")
+
+        # Fix size for simulator.
+        if self.config.get_string("general.video-source") == "simulator":
+            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        
+        self.capture.set(cv2.CAP_PROP_FPS, 30)
 
         # Main loop
         self.start_loop()
@@ -86,44 +114,37 @@ class Processor:
     def start_loop(self) -> None:
         """Main loop for image processing."""
 
-        # Get webcam capture
-        if self.config.get_string("general.video-source") == "file":
-            self.capture = cv2.VideoCapture(self.config.get_string("file.video-path"))
-        else:
-            self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"))
-
-        # Fix size for simulator.
-        if self.config.get_string("general.video-source") == "simulator":
-            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        
-        self.capture.set(cv2.CAP_PROP_FPS, 30)
-
         # Create recording if enabled.
-        video_path = os.path.join(self.record_dir, "video_1.avi")
+        video_path = os.path.join(self.record_dir, "video.avi")
         if self.record:
+            print("Creating VideoWriter...")
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), float(30), size)
-
+            print("VideoWriter created!")
+            
         # Windowed
         if self.preview:
-                        
+            
             self.properties = windowed.Windowed(self.config)
+            print("Properties set to window.")
+            
             def mainloop():
                 """Called each frame for process."""
-                if self.capture.isOpened():
+                if self.capture.isOpened() and not self.bindings.button.is_pressed:
                     self.process()
                     self.properties.capture_canvas.after(5, mainloop)
-            
+                
             mainloop()
+            print("Process loop started.")
             self.properties.app.mainloop()
             
         # Windowless
         else:
-        
+            
             self.properties = windowless.Windowedless(self.config)
-                
-            while self.capture.isOpened():
+            print("Properties set to config.")
+
+            while self.capture.isOpened() and not self.bindings.button.is_pressed:
                 self.process()
                 cv2.waitKey(5)
 
@@ -196,10 +217,12 @@ class Processor:
         # Drop the ball
         if collision_state:
             if not self.collided:
+                print("Collision detected.")
                 self.collided = True
                 self.bindings.open_package_door()
-        else:
+        elif self.collided:
             self.collided = False
+            print("Collision over.")
                 
         # Record Video
         if self.record:
