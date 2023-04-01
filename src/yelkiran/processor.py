@@ -116,11 +116,15 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
 
         # Create recording if enabled.
         video_path = os.path.join(self.record_dir, "video.avi")
+        num = 0
+        while os.path.isfile(video_path):
+            num = num + 1
+            video_path = os.path.join(self.record_dir, f"video_{num}.avi")
         if self.record:
-            print("Creating VideoWriter...")
+            print(f"Recording video: {video_path}")
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), float(30), size)
-            print("VideoWriter created!")
+            print("Record started.")
             
         # Windowed
         if self.preview:
@@ -130,9 +134,19 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             
             def mainloop():
                 """Called each frame for process."""
-                if self.capture.isOpened() and not self.bindings.button.is_pressed:
+                if self.capture.isOpened() and self.bindings.button.is_pressed:
                     self.process()
                     self.properties.capture_canvas.after(5, mainloop)
+                else:
+                    
+                    print("Record over.")
+                    # self.capture.release()
+                    
+                    while not self.bindings.button.is_pressed:
+                        cv2.waitKey(100)
+                        
+                    self.start_loop()
+                        
                 
             mainloop()
             print("Process loop started.")
@@ -144,11 +158,17 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.properties = windowless.Windowedless(self.config)
             print("Properties set to config.")
 
-            while self.capture.isOpened() and not self.bindings.button.is_pressed:
+            while self.capture.isOpened() and self.bindings.button.is_pressed:
                 self.process()
                 cv2.waitKey(5)
-
-        self.capture.release()
+            
+            print("Record over.")
+            # self.capture.release()
+            
+            while not self.bindings.button.is_pressed:
+                cv2.waitKey(100)
+            
+            self.start_loop()
 
 
     def process(self):
