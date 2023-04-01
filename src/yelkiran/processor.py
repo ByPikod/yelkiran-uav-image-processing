@@ -35,6 +35,7 @@ class Processor:
     result: cv2.VideoWriter
     capture: cv2.VideoCapture
 
+
     def __init__(self):
 
         # Configuration
@@ -74,13 +75,63 @@ class Processor:
         # Main loop
         self.start_loop()
 
+
     def get_capture_size(self) -> tuple[int, int]:
         """Returns the size of the capture."""
         frame_width = int(self.capture.get(3))
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
+    
+
+    def start_loop(self) -> None:
+        """Main loop for image processing."""
+
+        # Get webcam capture
+        if self.config.get_string("general.video-source") == "file":
+            self.capture = cv2.VideoCapture(self.config.get_string("file.video-path"))
+        else:
+            self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"))
+
+        # Fix size for simulator.
+        if self.config.get_string("general.video-source") == "simulator":
+            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        
+        self.capture.set(cv2.CAP_PROP_FPS, 30)
+
+        # Create recording if enabled.
+        video_path = os.path.join(self.record_dir, "video_1.avi")
+        if self.record:
+            size = self.get_capture_size()
+            self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), float(30), size)
+
+        # Windowed
+        if self.preview:
+                        
+            self.properties = windowed.Windowed(self.config)
+            def mainloop():
+                """Called each frame for process."""
+                if self.capture.isOpened():
+                    self.process()
+                    self.properties.capture_canvas.after(5, mainloop)
+            
+            mainloop()
+            self.properties.app.mainloop()
+            
+        # Windowless
+        else:
+        
+            self.properties = windowless.Windowedless(self.config)
+                
+            while self.capture.isOpened():
+                self.process()
+                cv2.waitKey(5)
+
+        self.capture.release()
+
 
     def process(self):
+        """Grab the frame and process"""
         
         ret, frame = self.capture.read()
 
@@ -154,8 +205,8 @@ class Processor:
         if self.record:
             self.result.write(frame)
 
+        # Special visualizations for preview
         if self.preview:
-            # Special visualizations for preview
             output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
             output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
 
@@ -191,50 +242,3 @@ class Processor:
                 
             self.properties.capture_canvas.imgtk = imgtk
             self.properties.capture_canvas.configure(image=imgtk)
-
-
-    def start_loop(self) -> None:
-        """Main loop for image processing."""
-
-        # Get webcam capture
-        if self.config.get_string("general.video-source") == "file":
-            self.capture = cv2.VideoCapture(self.config.get_string("file.video-path"))
-        else:
-            self.capture = cv2.VideoCapture(self.config.get_int("general.camera-index"), cv2.CAP_DSHOW)
-
-        # Fix size for simulator.
-        if self.config.get_string("general.video-source") == "simulator":
-            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        
-        self.capture.set(cv2.CAP_PROP_FPS, 30)
-
-        # Create recording if enabled.
-        video_path = os.path.join(self.record_dir, "video_1.avi")
-        if self.record:
-            size = self.get_capture_size()
-            self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), float(30), size)
-
-        # Windowed
-        if self.preview:
-                        
-            self.properties = windowed.Windowed(self.config)
-            
-            def mainloop():
-                """Called each frame for process."""
-                self.process()
-                self.properties.capture_canvas.after(5, mainloop)
-
-            mainloop()
-            self.properties.app.mainloop()
-            
-        # Windowless
-        else:
-        
-            self.properties = windowless.Windowedless(self.config)
-            
-            while True:
-                self.process()
-                cv2.waitKey(5)
-
-        self.capture.release()
