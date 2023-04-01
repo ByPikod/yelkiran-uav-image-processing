@@ -1,8 +1,13 @@
 """Bindings class"""
 import socket
-import pigpio
-from gpiozero import Servo
 from time import sleep
+
+try:
+    import pigpio
+    from gpiozero import Servo
+except ImportError:
+    print("Currently not running on Raspberry PI.")
+
 
 class Bindings:
     """

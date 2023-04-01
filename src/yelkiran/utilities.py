@@ -1,4 +1,5 @@
 import cv2
+import io
 
 
 def draw_square(frame, start, end, color, thickness):
