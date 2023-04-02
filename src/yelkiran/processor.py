@@ -1,12 +1,9 @@
 """Image processing."""
-import colorsys
 import datetime
-import tkinter
 import os
 
 import PIL.Image
 import PIL.ImageTk
-import numpy as np
 import cv2
 
 from . import properties
@@ -70,16 +67,16 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         mode = config.get_string("general.video-source").lower()
         if mode == "simulator":
             # Simulator Mode.
-            print("Binder is, Simulator")
+            print("Binder: Simulator")
             print("Connecting to the server...")
             self.bindings = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
         elif mode == "file":
             # File Mode
-            print("Binder is, Free")
+            print("Binder: Free")
             self.bindings = binder.Bindings()
         else:
             # Raspberry Pi Mode
-            print("Binder is, Raspberry")
+            print("Binder: Raspberry")
             self.bindings = binder.Raspberry()
 
         # Get webcam capture
@@ -97,8 +94,8 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         if self.config.get_string("general.video-source") == "simulator":
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        
-        self.capture.set(cv2.CAP_PROP_FPS, 30)
+        else:
+            self.capture.set(cv2.CAP_PROP_FPS, 30)
 
         # Main loop
         self.start_loop()
@@ -120,12 +117,12 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         while os.path.isfile(video_path):
             num = num + 1
             video_path = os.path.join(self.record_dir, f"video_{num}.avi")
-        if self.record:
+        if self.record and self.bindings.power():
             print(f"Recording video: {video_path}")
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), float(30), size)
             print("Record started.")
-            
+        
         # Windowed
         if self.preview:
             
@@ -134,7 +131,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             
             def mainloop():
                 """Called each frame for process."""
-                if self.capture.isOpened() and self.bindings.button.is_pressed:
+                if self.capture.isOpened() and self.bindings.power():
                     self.process()
                     self.properties.capture_canvas.after(5, mainloop)
                 else:
@@ -142,7 +139,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
                     print("Record over.")
                     # self.capture.release()
                     
-                    while not self.bindings.button.is_pressed:
+                    while not self.bindings.power():
                         cv2.waitKey(100)
                         
                     self.start_loop()
@@ -158,14 +155,14 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.properties = windowless.Windowedless(self.config)
             print("Properties set to config.")
 
-            while self.capture.isOpened() and self.bindings.button.is_pressed:
+            while self.capture.isOpened() and self.bindings.power():
                 self.process()
                 cv2.waitKey(5)
             
             print("Record over.")
             # self.capture.release()
             
-            while not self.bindings.button.is_pressed:
+            while not self.bindings.power():
                 cv2.waitKey(100)
             
             self.start_loop()
@@ -247,7 +244,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         # Record Video
         if self.record:
             self.result.write(frame)
-
+        
         # Special visualizations for preview
         if self.preview:
             output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)

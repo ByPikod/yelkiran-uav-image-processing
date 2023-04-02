@@ -16,6 +16,10 @@ class Bindings:
     """
     
     terminate = False
+    
+    def power(self) -> bool:
+        """Image processing will work if returns True. If not it will wait until it returns True."""
+        return True
 
     def open_package_door(self):
         """Binding for activate servo motor and open the package door."""
@@ -54,6 +58,9 @@ class Raspberry(Bindings):
         self.led.on()
         self.button = Button(2)
         print("Servo configured.")
+    
+    def power(self) -> bool:
+        return self.button.is_pressed
     
     def open_package_door(self):
         print("Package door is opened!")
