@@ -36,7 +36,7 @@ class Windowless(properties.Properties):
             config.get_int("opencv.collision-box-vertical-offset")
         
         print(
-            f""" Properties:
+            f"""Properties:
 Upper HSV:\t{str(self.upper_hsv.tolist())}
 Lower HSV:\t{str(self.lower_hsv.tolist())}
 Col width:\t{self.box_collision_width}

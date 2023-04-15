@@ -1,5 +1,4 @@
 """Image processing."""
-import colorsys
 import datetime
 import threading
 import tkinter
@@ -7,7 +6,6 @@ import os
 
 import PIL.Image
 import PIL.ImageTk
-import numpy as np
 import cv2
 
 from . import properties
@@ -77,16 +75,16 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         mode = config.get_string("general.video-source").lower()
         if mode == "simulator":
             # Simulator Mode.
-            print("Binder is, Simulator")
+            print("Binder: Simulator")
             print("Connecting to the server...")
             self.bindings = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
         elif mode == "file":
             # File Mode
-            print("Binder is, Free")
+            print("Binder: Free")
             self.bindings = binder.Bindings()
         else:
             # Raspberry Pi Mode
-            print("Binder is, Raspberry")
+            print("Binder: Raspberry")
             self.bindings = binder.Raspberry()
 
         # Get webcam capture
@@ -141,13 +139,13 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         while os.path.isfile(video_path):
             num = num + 1
             video_path = os.path.join(self.record_dir, f"video_{num}.avi")
-        if self.record:
+        if self.record and self.bindings.power():
             print(f"Recording video: {video_path}")
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), 30, size)
             self.result.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.CAP_DSHOW)
             print("Record started.")
-            
+        
         # Windowed
         if not self.preview:
             self.properties = windowless.Windowless(self.config)
