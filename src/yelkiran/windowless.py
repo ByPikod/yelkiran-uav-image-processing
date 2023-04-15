@@ -3,7 +3,7 @@ from . import properties
 import numpy as np
 
 
-class Windowedless(properties.Properties):
+class Windowless(properties.Properties):
     
     def __init__(self, config) -> None:
     

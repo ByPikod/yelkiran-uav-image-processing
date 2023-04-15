@@ -26,6 +26,7 @@ def fill_config(conf: configparser.ConfigParser):
         "camera-index": 1,
         "logging": True,
         "preview": True,
+        "visualize-processing": True,
         "record": True,
         "record-dir": "./"
     }

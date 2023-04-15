@@ -1,6 +1,7 @@
 """Image processing."""
 import colorsys
 import datetime
+import threading
 import tkinter
 import os
 
@@ -31,9 +32,11 @@ class Processor:
     record: bool
     
     collided: bool = False
+    continue_processing: bool = True
 
     result: cv2.VideoWriter
     capture: cv2.VideoCapture
+    final_output: np.ndarray = None
 
 
     def __init__(self):
@@ -42,8 +45,12 @@ class Processor:
         config = conf.ConfigUtil()
         self.config = config
         self.preview = self.config.get_bool("general.preview")
+        self.visualize = self.config.get_bool("general.visualize-processing")
         self.record = self.config.get_bool("general.record")
         self.logging = config.get_bool("general.logging")
+        
+        # self.final_output = np.zeros((480, 640), dtype=np.uint8)
+        # self.final_output.fill(255)
         
         # Unique folder
         self.record_dir = os.path.abspath(os.path.join(
@@ -99,9 +106,23 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         
         self.capture.set(cv2.CAP_PROP_FPS, 30)
-
+            
         # Main loop
-        self.start_loop()
+        
+        if self.preview:    
+            
+            self.properties = windowed.Windowed(self.config)
+            print("Properties set to window.")
+            
+            processing_thread = threading.Thread(target=self.start_loop)
+            processing_thread.start()
+                
+            # Create window loop in another thread
+            self.tkinter_loop()
+            self.continue_processing = False
+            
+        else:
+            self.start_loop()
 
 
     def get_capture_size(self) -> tuple[int, int]:
@@ -109,7 +130,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         frame_width = int(self.capture.get(3))
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
-    
+
 
     def start_loop(self) -> None:
         """Main loop for image processing."""
@@ -123,52 +144,51 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         if self.record:
             print(f"Recording video: {video_path}")
             size = self.get_capture_size()
-            self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), float(30), size)
+            self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), 30, size)
+            self.result.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.CAP_DSHOW)
             print("Record started.")
             
         # Windowed
-        if self.preview:
-            
-            self.properties = windowed.Windowed(self.config)
-            print("Properties set to window.")
-            
-            def mainloop():
-                """Called each frame for process."""
-                if self.capture.isOpened() and self.bindings.button.is_pressed:
-                    self.process()
-                    self.properties.capture_canvas.after(5, mainloop)
-                else:
-                    
-                    print("Record over.")
-                    # self.capture.release()
-                    
-                    while not self.bindings.button.is_pressed:
-                        cv2.waitKey(100)
-                        
-                    self.start_loop()
-                        
-                
-            mainloop()
-            print("Process loop started.")
-            self.properties.app.mainloop()
-            
-        # Windowless
-        else:
-            
-            self.properties = windowless.Windowedless(self.config)
+        if not self.preview:
+            self.properties = windowless.Windowless(self.config)
             print("Properties set to config.")
 
-            while self.capture.isOpened() and self.bindings.button.is_pressed:
-                self.process()
-                cv2.waitKey(5)
+        while self.capture.isOpened() and self.bindings.button.is_pressed:
             
-            print("Record over.")
-            # self.capture.release()
+            if not self.continue_processing:
+                self.capture.release()
+                self.result.release()
+                return
             
-            while not self.bindings.button.is_pressed:
-                cv2.waitKey(100)
+            self.process()
+            cv2.waitKey(5)
             
-            self.start_loop()
+        print("Record over.")
+        self.result.release()
+            
+        while not self.bindings.button.is_pressed:
+            cv2.waitKey(100)
+            
+        self.start_loop()
+
+
+    def tkinter_loop(self) -> None:
+        
+        def mainloop():    
+            
+            if self.final_output is None:
+                self.properties.capture_canvas.after(5, mainloop)
+                return
+            
+            img = PIL.Image.fromarray(self.final_output)
+            imgtk = PIL.ImageTk.PhotoImage(image=img)
+            self.properties.capture_canvas.imgtk = imgtk
+            self.properties.capture_canvas.configure(image=imgtk)
+            self.properties.capture_canvas.after(5, mainloop)
+                
+        print("Window loop starting.")
+        mainloop()
+        self.properties.app.mainloop()
 
 
     def process(self):
@@ -243,16 +263,8 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         elif self.collided:
             self.collided = False
             print("Collision over.")
-                
-        # Record Video
-        if self.record:
-            self.result.write(frame)
-
-        # Special visualizations for preview
-        if self.preview:
-            output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
-            output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
-
+        
+        if self.visualize:
             if len(contours) > 0:
                 # cv2.drawContours(output, contours, 0, (255, 255, 255), 2)
                 cv2.circle(frame, (cx, cy), 10, (255, 255, 255), -1)
@@ -269,6 +281,15 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
                 collision_color,
                 3
             )
+                
+        # Record Video
+        if self.record:
+            self.result.write(frame)
+
+        # Special visualizations for preview
+        if self.preview:
+            output = cv2.bitwise_and(frame_hsv, frame_hsv, mask=mask)
+            output = cv2.cvtColor(output, cv2.COLOR_HSV2RGB)
 
             # Resize
             frame = cv2.resize(frame, (640, 360))
@@ -278,10 +299,4 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Final Output
-            final_output = cv2.hconcat([frame, output])
-
-            img = PIL.Image.fromarray(final_output)
-            imgtk = PIL.ImageTk.PhotoImage(image=img)
-                
-            self.properties.capture_canvas.imgtk = imgtk
-            self.properties.capture_canvas.configure(image=imgtk)
+            self.final_output = cv2.hconcat([frame, output])
