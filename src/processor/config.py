@@ -3,48 +3,6 @@ import configparser
 import os
 
 
-def fill_config(conf: configparser.ConfigParser):
-    """
-    Fills the ConfigParser that passed as an argument with the default config variables.
-    """
-
-    conf["OPENCV"] = {
-        "upper_h": 180,
-        "upper_s": 255,
-        "upper_v": 255,
-        "lower_h": 0,
-        "lower_s": 0,
-        "lower_v": 0,
-        "collision-box-width": 100,
-        "collision-box-height": 100,
-        "collision-box-horizontal-offset": 0,
-        "collision-box-vertical-offset": 0,
-    }
-
-    conf["GENERAL"] = {
-        "video-source": "simulator",
-        "camera-index": 1,
-        "logging": True,
-        "preview": True,
-        "visualize-processing": True,
-        "record": True,
-        "record-dir": "./"
-    }
-
-    conf["RASPBERRY"] = {
-
-    }
-
-    conf["FILE"] = {
-        "video-path": "source.mp4"
-    }
-
-    conf["SIMULATOR"] = {
-        "host": "127.0.0.1",
-        "port": 5710
-    }
-
-
 class ConfigUtil:
     """
     Config utils.
@@ -52,13 +10,51 @@ class ConfigUtil:
 
     config_parser: configparser.ConfigParser
 
+    @staticmethod
+    def fill_config(conf: configparser.ConfigParser):
+        """
+        Fills the ConfigParser that passed as an argument with the default config variables.
+        """
+
+        conf["OPENCV"] = {
+            "upper_h": 180,
+            "upper_s": 255,
+            "upper_v": 255,
+            "lower_h": 0,
+            "lower_s": 0,
+            "lower_v": 0,
+            "collision-box-width": 100,
+            "collision-box-height": 100,
+            "collision-box-horizontal-offset": 0,
+            "collision-box-vertical-offset": 0,
+        }
+
+        conf["GENERAL"] = {
+            "video-source": "simulator",
+            "camera-index": 1,
+            "logging": True,
+            "preview": True,
+            "visualize-processing": True,
+            "record": True,
+            "record-dir": "./"
+        }
+
+        conf["FILE"] = {
+            "video-path": "source.mp4"
+        }
+
+        conf["SIMULATOR"] = {
+            "host": "127.0.0.1",
+            "port": 5710
+        }
+
     def __init__(self):
 
         # Create a config
         self.config_parser = configparser.ConfigParser()
 
         # Fill with defalut variables
-        fill_config(self.config_parser)
+        self.fill_config(self.config_parser)
 
         # Read data
         root_dir = os.path.dirname(os.path.abspath(__file__))

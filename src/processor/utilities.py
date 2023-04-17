@@ -3,7 +3,8 @@ import io
 
 
 def draw_square(frame, start, end, color, thickness):
-    
+    """Draw better looking square."""
+
     width = start[0] - end[0]
     height = start[1] - end[1]
 

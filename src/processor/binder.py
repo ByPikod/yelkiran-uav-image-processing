@@ -6,7 +6,7 @@ from time import sleep
 try:
     from gpiozero import Servo, LED, Button
 except ImportError:
-    print("Currently not running on Raspberry PI.")
+    print("GpioZero not found! Make sure your video-source property is not 'raspberry'.")
 
 
 class Bindings:
@@ -25,7 +25,7 @@ class Bindings:
         """Binding for activate servo motor and open the package door."""
 
 
-class Server(Bindings):
+class Simulator(Bindings):
     """
     Connects to the simulator via socket and sends the command to drop ball.
     """

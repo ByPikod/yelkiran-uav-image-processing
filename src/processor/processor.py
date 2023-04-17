@@ -1,7 +1,6 @@
 """Image processing."""
 import datetime
 import threading
-import tkinter
 import os
 
 import numpy as np
@@ -47,9 +46,6 @@ class Processor:
         self.record = self.config.get_bool("general.record")
         self.logging = config.get_bool("general.logging")
 
-        # self.final_output = np.zeros((480, 640), dtype=np.uint8)
-        # self.final_output.fill(255)
-
         # Unique folder
         self.record_dir = os.path.abspath(os.path.join(
             config.get_string('general.record-dir'),
@@ -58,7 +54,8 @@ class Processor:
         if (
                 not os.path.exists(self.record_dir) and
                 (self.logging or self.record)
-        ): os.makedirs(self.record_dir)
+        ):
+            os.makedirs(self.record_dir)
 
         # Logging
         if self.logging:
@@ -77,7 +74,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             # Simulator Mode.
             print("Binder: Simulator")
             print("Connecting to the server...")
-            self.bindings = binder.Server(config.get_string("simulator.host"), config.get_int("simulator.port"))
+            self.bindings = binder.Simulator(config.get_string("simulator.host"), config.get_int("simulator.port"))
         elif mode == "file":
             # File Mode
             print("Binder: Free")
@@ -206,21 +203,21 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
                 - self.properties.box_collision_width / 2
                 + self.properties.box_collision_horizontal
             ), \
-                int(
-                    frame_h / 2
-                    - self.properties.box_collision_height / 2
-                    + self.properties.box_collision_vertical
-                ), \
-                int(
-                    frame_w / 2
-                    + self.properties.box_collision_width / 2
-                    + self.properties.box_collision_horizontal
-                ), \
-                int(
-                    frame_h / 2
-                    + self.properties.box_collision_height / 2
-                    + self.properties.box_collision_vertical
-                )
+            int(
+                frame_h / 2
+                - self.properties.box_collision_height / 2
+                + self.properties.box_collision_vertical
+            ), \
+            int(
+                frame_w / 2
+                + self.properties.box_collision_width / 2
+                + self.properties.box_collision_horizontal
+            ), \
+            int(
+                frame_h / 2
+                + self.properties.box_collision_height / 2
+                + self.properties.box_collision_vertical
+            )
 
         # Create the mask
         frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -237,12 +234,11 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         cx, cy = 0, 0
         if len(contours) > 0:
             c = max(contours, key=cv2.contourArea)
-            cmoments = cv2.moments(c)
+            c_moments = cv2.moments(c)
             try:
                 cx, cy = \
-                    int(cmoments['m10'] / cmoments['m00']), \
-                    int(cmoments['m01'] / cmoments['m00'])
-                
+                    int(c_moments['m10'] / c_moments['m00']), \
+                    int(c_moments['m01'] / c_moments['m00'])
             except ZeroDivisionError:
                 return
 

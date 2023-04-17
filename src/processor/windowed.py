@@ -186,10 +186,10 @@ class Windowed(properties.Properties):
         def update_collision_box_data():
             """global collision data."""
             self.box_collision_width, \
-            self.box_collision_height, \
-            self.box_collision_horizontal, \
-            self.box_collision_vertical \
-            = get_collision_box_data()
+                self.box_collision_height, \
+                self.box_collision_horizontal, \
+                self.box_collision_vertical \
+                = get_collision_box_data()
         
         def fill_collision_box_data() -> None:
             """Fills collision box data according to config."""

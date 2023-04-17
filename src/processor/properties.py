@@ -1,3 +1,5 @@
+import tkinter as tk
+
 import numpy as np
 
 
@@ -9,5 +11,9 @@ class Properties:
     
     box_collision_width: int
     box_collision_height: int
-    box_collision_horizontal_offset: int
-    box_collision_vertical_offset: int
+    box_collision_horizontal: int
+    box_collision_vertical: int
+
+    # Optional properties
+    app: tk.Tk
+    capture_canvas: tk.Label
