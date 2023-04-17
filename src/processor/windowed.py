@@ -94,12 +94,20 @@ class Windowed(properties.Properties):
         upper_v.pack(side=tkinter.LEFT)
     
         # Utilities
-        def get_upper_hsv():
-            """Upper hsv slider variables."""
+        def get_upper_hsv() -> tuple[float, float, float]:
+            """
+            Returns upper HSV variables.
+            :return: Upper hsv slider variables.
+            """
+
             return upper_h.get(), upper_s.get(), upper_v.get()
     
-        def get_lower_hsv():
-            """Lower hsv slider variables."""
+        def get_lower_hsv() -> tuple[float, float, float]:
+            """
+            Returns lower HSV variables.
+            :return: Lower hsv slider variables.
+            """
+
             return lower_h.get(), lower_s.get(), lower_v.get()
     
         # Listen for events
@@ -176,15 +184,19 @@ class Windowed(properties.Properties):
         col_box_vertical_offset_sb.pack()
         
         def get_collision_box_data() -> tuple[int, int, int, int]:
-            """Returns collision box data"""
+            """
+            Returns collision box data.
+            """
             return \
                 int(col_box_width_sb.get()) if col_box_width_sb.get().lstrip('-').isdigit() else 0, \
                 int(col_box_height_sb.get()) if col_box_height_sb.get().lstrip('-').isdigit() else 0, \
                 int(col_box_horizontal_offset_sb.get()) if col_box_horizontal_offset_sb.get().lstrip('-').isdigit() else 0, \
                 int(col_box_vertical_offset_sb.get()) if col_box_vertical_offset_sb.get().lstrip('-').isdigit() else 0
             
-        def update_collision_box_data():
-            """global collision data."""
+        def update_collision_box_data() -> None:
+            """
+            Update the collision data.
+            """
             self.box_collision_width, \
                 self.box_collision_height, \
                 self.box_collision_horizontal, \
@@ -192,7 +204,9 @@ class Windowed(properties.Properties):
                 = get_collision_box_data()
         
         def fill_collision_box_data() -> None:
-            """Fills collision box data according to config."""
+            """
+            Fills collision box data according to config.
+            """
             col_box_width_sb.delete(0, "end")
             col_box_height_sb.delete(0, "end")
             col_box_horizontal_offset_sb.delete(0, "end")
@@ -211,7 +225,10 @@ class Windowed(properties.Properties):
     
         # Buttons
         def save():
-            """Save changes."""
+            """
+            Save changes.
+            """
+
             h, s, v = get_upper_hsv()
             config.set_field("opencv.upper_h", str(h))
             config.set_field("opencv.upper_s", str(s))
@@ -231,7 +248,10 @@ class Windowed(properties.Properties):
             config.save()
     
         def discard():
-            """Discard changes"""
+            """
+            Discard changes
+            """
+
             upper_h.set(config.get_int("opencv.upper_h"))
             upper_v.set(config.get_int("opencv.upper_v"))
             upper_s.set(config.get_int("opencv.upper_s"))
@@ -241,6 +261,10 @@ class Windowed(properties.Properties):
             fill_collision_box_data()
     
         def quit_command():
+            """
+            Quit application.
+            """
+
             self.app.quit()
     
         tkinter.Button(buttons_panel, text="Save Changes", command=save).pack(side=tkinter.LEFT, padx=5)

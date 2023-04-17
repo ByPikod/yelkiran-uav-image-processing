@@ -4,7 +4,10 @@ import numpy as np
 
 
 class Windowless(properties.Properties):
-    
+    """
+    Retrieve properties in the case window is not enabled.
+    """
+
     def __init__(self, config) -> None:
     
         self.upper_hsv = np.array(

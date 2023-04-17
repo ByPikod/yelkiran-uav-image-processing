@@ -1,3 +1,4 @@
+"""The class that wraps properties for processor."""
 import tkinter as tk
 
 import numpy as np

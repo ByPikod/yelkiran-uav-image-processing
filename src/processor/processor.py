@@ -8,13 +8,14 @@ import PIL.Image
 import PIL.ImageTk
 import cv2
 
+from . import groundstation as gs
+from . import config as conf
 from . import properties
-from . import windowed
 from . import windowless
 from . import utilities
+from . import windowed
 from . import savelog
 from . import binder
-from . import config as conf
 
 
 class Processor:
@@ -32,11 +33,13 @@ class Processor:
     collided: bool = False
     continue_processing: bool = True
 
-    result: cv2.VideoWriter
-    capture: cv2.VideoCapture
-    final_output: np.ndarray = None
+    result: cv2.VideoWriter = None
+    capture: cv2.VideoCapture = None
 
-    def __init__(self):
+    final_output: np.ndarray = None
+    groundstation: gs.Groundstation = None
+
+    def __init__(self) -> None:
 
         # Configuration
         config = conf.ConfigUtil()
@@ -77,7 +80,11 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.bindings = binder.Simulator(config.get_string("simulator.host"), config.get_int("simulator.port"))
         elif mode == "file":
             # File Mode
-            print("Binder: Free")
+            print("Binder: File")
+            self.bindings = binder.Bindings()
+        elif mode == "webcam":
+            # File Mode
+            print("Binder: Webcam")
             self.bindings = binder.Bindings()
         else:
             # Raspberry Pi Mode
@@ -102,8 +109,15 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
 
         self.capture.set(cv2.CAP_PROP_FPS, 30)
 
-        # Main loop
+        if self.config.get_bool("groundstation.enabled"):
+            self.groundstation = gs.Groundstation(
+                (
+                    self.config.get_string("groundstation.host"),
+                    self.config.get_int("groundstation.port"),
+                )
+            )
 
+        # Main loop
         if self.preview:
 
             self.properties = windowed.Windowed(self.config)
@@ -120,14 +134,19 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.start_loop()
 
     def get_capture_size(self) -> tuple[int, int]:
-        """Returns the size of the capture."""
+        """
+        Returns the size of the 'self.capture'
+        :return: (Width, Height)
+        """
 
         frame_width = int(self.capture.get(3))
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
 
     def start_loop(self) -> None:
-        """Main loop for image processing."""
+        """
+        Main loop for image processing.
+        """
 
         # Create recording if enabled.
         video_path = os.path.join(self.record_dir, "video.avi")
@@ -135,7 +154,8 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         while os.path.isfile(video_path):
             num = num + 1
             video_path = os.path.join(self.record_dir, f"video_{num}.avi")
-        if self.record and self.bindings.power():
+
+        if self.record:
             print(f"Recording video: {video_path}")
             size = self.get_capture_size()
             self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), 30, size)
@@ -147,18 +167,24 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.properties = windowless.Windowless(self.config)
             print("Properties set to config.")
 
-        while self.capture.isOpened() and self.bindings.power():
+        while self.bindings.power():
 
-            if not self.continue_processing:
+            # Terminate
+            if not self.continue_processing or not self.capture.isOpened():
                 self.capture.release()
-                self.result.release()
+
+                if self.result is not None:
+                    self.result.release()
+
                 return
 
             self.process()
             cv2.waitKey(5)
 
         print("Record over.")
-        self.result.release()
+
+        if self.result is not None:
+            self.result.release()
 
         while not self.bindings.power():
             cv2.waitKey(100)
@@ -166,7 +192,9 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         self.start_loop()
 
     def tkinter_loop(self) -> None:
-        """Initialize window loop"""
+        """
+        Initialize window loop.
+        """
 
         def mainloop():
             if self.final_output is None:
@@ -183,8 +211,10 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         mainloop()
         self.properties.app.mainloop()
 
-    def process(self):
-        """Grab the frame and process."""
+    def process(self) -> None:
+        """
+        Grab the frame and process.
+        """
 
         ret, frame = self.capture.read()
 
@@ -279,6 +309,10 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         # Record Video
         if self.record:
             self.result.write(frame)
+
+        # Stream Video
+        if self.groundstation is not None:
+            self.groundstation.stream(frame)
 
         # Special visualizations for preview
         if self.preview:

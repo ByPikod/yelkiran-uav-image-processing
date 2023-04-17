@@ -11,10 +11,21 @@ class ConfigUtil:
     config_parser: configparser.ConfigParser
 
     @staticmethod
-    def fill_config(conf: configparser.ConfigParser):
+    def fill_config(conf: configparser.ConfigParser) -> None:
         """
         Fills the ConfigParser that passed as an argument with the default config variables.
+        :param conf: Config to fill
         """
+
+        conf["GENERAL"] = {
+            "record": True,
+            "logging": True,
+            "preview": True,
+            "visualize-processing": True,
+            "record-dir": "./",
+            "video-source": "simulator",
+            "camera-index": 1
+        }
 
         conf["OPENCV"] = {
             "upper_h": 180,
@@ -29,14 +40,10 @@ class ConfigUtil:
             "collision-box-vertical-offset": 0,
         }
 
-        conf["GENERAL"] = {
-            "video-source": "simulator",
-            "camera-index": 1,
-            "logging": True,
-            "preview": True,
-            "visualize-processing": True,
-            "record": True,
-            "record-dir": "./"
+        conf["GROUNDSTATION"] = {
+            "enabled": True,
+            "host": "127.0.0.1",
+            "port": 1864
         }
 
         conf["FILE"] = {
@@ -48,12 +55,12 @@ class ConfigUtil:
             "port": 5710
         }
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         # Create a config
         self.config_parser = configparser.ConfigParser()
 
-        # Fill with defalut variables
+        # Fill with default variables
         self.fill_config(self.config_parser)
 
         # Read data
@@ -64,23 +71,33 @@ class ConfigUtil:
         # Write data
         self.save()
 
-    def get_string(self, locator: str) -> str:
+    def get_string(self, locator: str) -> str | None:
         """
         Allows you to retrieve config data quickly.
-        You can write "simulator.enabled" instead ["SIMULATOR"]["enabled"]
+        :param locator: Example locator: "simulator.enabled"
+        :return: Matching data
         """
-        splitted_locator = locator.split(".")
-        splitted_locator[0] = splitted_locator[0].upper()
 
-        return self.config_parser[splitted_locator[0]][splitted_locator[1]]
+        split_locator = locator.split(".")
+        split_locator[0] = split_locator[0].upper()
+
+        return self.config_parser[split_locator[0]][split_locator[1]]
 
     def get_bool(self, field: str) -> bool:
-        """Returns bool data from config."""
+        """
+        Returns bool data from config.
+        :param field: Locator
+        :return: Matching boolean data
+        """
 
         return self.get_string(field).lower() == "true"
 
     def get_int(self, field: str) -> int:
-        """Returns int data from config."""
+        """
+        Returns int data from config.
+        :param field: Locator
+        :return: Matching integer data
+        """
 
         try:
             return int(self.get_string(field))
@@ -89,16 +106,20 @@ class ConfigUtil:
 
     def set_field(self, locator: str, value: any) -> None:
         """
-        Allows you to write config data quickly.
-        You can write "simulator.enabled" instead ["SIMULATOR"]["enabled"]
+        Allows you to set config data quickly.
+        :param locator: Where to set
+        :param value: Value to set
         """
-        splitted_locator = locator.split(".")
-        splitted_locator[0] = splitted_locator[0].upper()
 
-        self.config_parser[splitted_locator[0]][splitted_locator[1]] = value
+        split_locator = locator.split(".")
+        split_locator[0] = split_locator[0].upper()
+
+        self.config_parser[split_locator[0]][split_locator[1]] = value
 
     def save(self) -> None:
-        """Write config."""
+        """
+        Save config.
+        """
 
         with open(self.conf_path, 'w') as conf_file:
             self.config_parser.write(conf_file)

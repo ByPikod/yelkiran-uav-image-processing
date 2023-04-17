@@ -18,11 +18,16 @@ class Bindings:
     terminate = False
     
     def power(self) -> bool:
-        """Image processing will work if returns True. If not it will wait until it returns True."""
+        """
+        Power button
+        :return: Should continue to processing image ?
+        """
         return True
 
-    def open_package_door(self):
-        """Binding for activate servo motor and open the package door."""
+    def open_package_door(self) -> None:
+        """
+        Binding for activate servo motor and open the package door.
+        """
 
 
 class Simulator(Bindings):

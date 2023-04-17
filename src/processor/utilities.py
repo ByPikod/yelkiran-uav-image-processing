@@ -1,9 +1,23 @@
 import cv2
-import io
+
+import numpy as np
 
 
-def draw_square(frame, start, end, color, thickness):
-    """Draw better looking square."""
+def draw_square(
+        frame: np.ndarray,
+        start: tuple[int, int],
+        end: tuple[int, int],
+        color: tuple[int, int, int],
+        thickness: int
+) -> None:
+    """
+    Draw better looking square.
+    :param frame: OpenCV frame
+    :param start: Start corner tuple.
+    :param end: Opposite corner tuple.
+    :param color: Color tuple
+    :param thickness: Thickness of the lines
+    """
 
     width = start[0] - end[0]
     height = start[1] - end[1]
