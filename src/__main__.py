@@ -1,5 +1,5 @@
 """Launch the code."""
-from yelkiran import Processor
+from processor import Processor
 
 if __name__ == "__main__":
     processor = Processor()

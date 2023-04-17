@@ -4,6 +4,7 @@ import threading
 import tkinter
 import os
 
+import numpy as np
 import PIL.Image
 import PIL.ImageTk
 import cv2
@@ -28,14 +29,13 @@ class Processor:
 
     preview: bool
     record: bool
-    
+
     collided: bool = False
     continue_processing: bool = True
 
     result: cv2.VideoWriter
     capture: cv2.VideoCapture
     final_output: np.ndarray = None
-
 
     def __init__(self):
 
@@ -46,20 +46,20 @@ class Processor:
         self.visualize = self.config.get_bool("general.visualize-processing")
         self.record = self.config.get_bool("general.record")
         self.logging = config.get_bool("general.logging")
-        
+
         # self.final_output = np.zeros((480, 640), dtype=np.uint8)
         # self.final_output.fill(255)
-        
+
         # Unique folder
         self.record_dir = os.path.abspath(os.path.join(
             config.get_string('general.record-dir'),
             f"recording {datetime.datetime.now().strftime('%d.%m.%Y %H-%M-%S')}"
         ))
         if (
-            not os.path.exists(self.record_dir) and
-            (self.logging or self.record)
+                not os.path.exists(self.record_dir) and
+                (self.logging or self.record)
         ): os.makedirs(self.record_dir)
-        
+
         # Logging
         if self.logging:
             savelog.initialize(self.record_dir)
@@ -69,8 +69,8 @@ Output directory: {self.record_dir}
 Preview:\t{'Enabled' if self.preview else 'Disabled'}
 Recording:\t{'Enabled' if self.record else 'Disabled'}
 Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
-        )
-        
+              )
+
         # Bindings
         mode = config.get_string("general.video-source").lower()
         if mode == "simulator":
@@ -102,33 +102,32 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         if self.config.get_string("general.video-source") == "simulator":
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        
+
         self.capture.set(cv2.CAP_PROP_FPS, 30)
-            
+
         # Main loop
-        
-        if self.preview:    
-            
+
+        if self.preview:
+
             self.properties = windowed.Windowed(self.config)
             print("Properties set to window.")
-            
+
             processing_thread = threading.Thread(target=self.start_loop)
             processing_thread.start()
-                
+
             # Create window loop in another thread
             self.tkinter_loop()
             self.continue_processing = False
-            
+
         else:
             self.start_loop()
 
-
     def get_capture_size(self) -> tuple[int, int]:
         """Returns the size of the capture."""
+
         frame_width = int(self.capture.get(3))
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
-
 
     def start_loop(self) -> None:
         """Main loop for image processing."""
@@ -145,53 +144,51 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             self.result = cv2.VideoWriter(os.path.abspath(video_path), cv2.VideoWriter_fourcc(*'XVID'), 30, size)
             self.result.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.CAP_DSHOW)
             print("Record started.")
-        
+
         # Windowed
         if not self.preview:
             self.properties = windowless.Windowless(self.config)
             print("Properties set to config.")
 
-        while self.capture.isOpened() and self.bindings.button.is_pressed:
-            
+        while self.capture.isOpened() and self.bindings.power():
+
             if not self.continue_processing:
                 self.capture.release()
                 self.result.release()
                 return
-            
+
             self.process()
             cv2.waitKey(5)
-            
+
         print("Record over.")
         self.result.release()
-            
-        while not self.bindings.button.is_pressed:
+
+        while not self.bindings.power():
             cv2.waitKey(100)
-            
+
         self.start_loop()
 
-
     def tkinter_loop(self) -> None:
-        
-        def mainloop():    
-            
+        """Initialize window loop"""
+
+        def mainloop():
             if self.final_output is None:
                 self.properties.capture_canvas.after(5, mainloop)
                 return
-            
+
             img = PIL.Image.fromarray(self.final_output)
             imgtk = PIL.ImageTk.PhotoImage(image=img)
             self.properties.capture_canvas.imgtk = imgtk
             self.properties.capture_canvas.configure(image=imgtk)
             self.properties.capture_canvas.after(5, mainloop)
-                
+
         print("Window loop starting.")
         mainloop()
         self.properties.app.mainloop()
 
-
     def process(self):
-        """Grab the frame and process"""
-        
+        """Grab the frame and process."""
+
         ret, frame = self.capture.read()
 
         if not ret:
@@ -205,29 +202,31 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             box_end_x, \
             box_end_y = \
             int(
-                frame_w / 2 
-                - self.properties.box_collision_width / 2 
+                frame_w / 2
+                - self.properties.box_collision_width / 2
                 + self.properties.box_collision_horizontal
             ), \
-            int(
-                frame_h / 2 
-                - self.properties.box_collision_height / 2 
-                + self.properties.box_collision_vertical
-            ), \
-            int(frame_w / 2 
-            + self.properties.box_collision_width / 2 
-            + self.properties.box_collision_horizontal
-            ), \
-            int(frame_h / 2 
-            + self.properties.box_collision_height / 2 
-            + self.properties.box_collision_vertical
-            )
+                int(
+                    frame_h / 2
+                    - self.properties.box_collision_height / 2
+                    + self.properties.box_collision_vertical
+                ), \
+                int(
+                    frame_w / 2
+                    + self.properties.box_collision_width / 2
+                    + self.properties.box_collision_horizontal
+                ), \
+                int(
+                    frame_h / 2
+                    + self.properties.box_collision_height / 2
+                    + self.properties.box_collision_vertical
+                )
 
         # Create the mask
         frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(
-            frame_hsv, 
-            self.properties.lower_hsv, 
+            frame_hsv,
+            self.properties.lower_hsv,
             self.properties.upper_hsv
         )
 
@@ -241,15 +240,16 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             cmoments = cv2.moments(c)
             try:
                 cx, cy = \
-                int(cmoments['m10'] / cmoments['m00']), \
-                int(cmoments['m01'] / cmoments['m00'])
+                    int(cmoments['m10'] / cmoments['m00']), \
+                    int(cmoments['m01'] / cmoments['m00'])
+                
             except ZeroDivisionError:
                 return
 
         # If detected object is colliding with the box.
         collision_state = (
-            box_start_x < cx < box_end_x and
-            box_start_y < cy < box_end_y
+                box_start_x < cx < box_end_x and
+                box_start_y < cy < box_end_y
         )
 
         # Drop the ball
@@ -261,7 +261,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         elif self.collided:
             self.collided = False
             print("Collision over.")
-        
+
         if self.visualize:
             if len(contours) > 0:
                 # cv2.drawContours(output, contours, 0, (255, 255, 255), 2)
@@ -279,7 +279,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
                 collision_color,
                 3
             )
-                
+
         # Record Video
         if self.record:
             self.result.write(frame)
