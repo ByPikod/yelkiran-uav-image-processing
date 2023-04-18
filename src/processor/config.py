@@ -71,7 +71,7 @@ class ConfigUtil:
         # Write data
         self.save()
 
-    def get_string(self, locator: str) -> str | None:
+    def get_string(self, locator: str) -> str:
         """
         Allows you to retrieve config data quickly.
         :param locator: Example locator: "simulator.enabled"

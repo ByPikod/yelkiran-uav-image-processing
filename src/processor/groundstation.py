@@ -24,7 +24,7 @@ class Groundstation:
         Stream frame to the groundstation.
         :param frame: Frame
         """
-
+        
         # Cooldown for trying again.
         if self.next_try > time.time():
             return
