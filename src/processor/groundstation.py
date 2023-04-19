@@ -95,11 +95,12 @@ class Groundstation:
         # Stream
         try:
             self.udp_socket.sendto(data, self.stream_addr)
-        except OSError:
+        except OSError as e:
             if not self.connected:
                 return
             self.next_try = int(time.time()) + 1000
-            print("Failed to stream output to groundstation. Trying again.")
+            print(f"Failed to stream output to groundstation: {e}")
+            print("Trying again")
 
     def on_tcp_message(self, data: bytes) -> None:
         """
