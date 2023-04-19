@@ -43,7 +43,8 @@ class ConfigUtil:
         conf["GROUNDSTATION"] = {
             "enabled": True,
             "host": "127.0.0.1",
-            "port": 1864
+            "query_port": 1864,
+            "stream_port": 2023
         }
 
         conf["FILE"] = {

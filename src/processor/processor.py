@@ -111,10 +111,9 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
 
         if self.config.get_bool("groundstation.enabled"):
             self.groundstation = gs.Groundstation(
-                (
-                    self.config.get_string("groundstation.host"),
-                    self.config.get_int("groundstation.port"),
-                )
+                self.config.get_string("groundstation.host"),
+                self.config.get_int("groundstation.query_port"),
+                self.config.get_int("groundstation.stream_port"),
             )
 
         # Main loop
@@ -312,7 +311,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
 
         # Stream Video
         if self.groundstation is not None:
-            self.groundstation.stream(frame)
+            self.groundstation.send_udp_message(frame)
 
         # Special visualizations for preview
         if self.preview:
