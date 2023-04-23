@@ -21,6 +21,9 @@ class Groundstation:
     running: bool = True     # This will terminate connection loop if False
     connected: bool = False  # This will prevent stream through UDP if False
     next_try: int = 0
+    heartbeat_frequency: int = 3
+
+    heartbeat_timer: threading.Timer = None
 
     def __init__(self, host: str, query_port: int, stream_port: int) -> None:
         self.query_addr = (host, query_port)
@@ -47,17 +50,25 @@ class Groundstation:
 
             # Successfully connected
             self.on_tcp_established()
+            # Start sending heartbeats
+
             # Listen server
             self.listen_tcp()
             # Connection terminated due to an error.
             self.on_tcp_terminated()
-            print()
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """
+        Terminate server.
+        """
+
         self.running = False
         self.connected = False
         self.tcp_socket.close()
         self.udp_socket.close()
+
+        if self.heartbeat_timer is not None:
+            self.heartbeat_timer.cancel()
 
     def listen_tcp(self) -> None:
         """
@@ -77,6 +88,15 @@ class Groundstation:
                 break
 
             self.on_tcp_message(data)
+
+    def send_heartbeat(self) -> None:
+        if not self.running:
+            return
+        self.tcp_socket.send(b"heartbeat")
+        self.heartbeat_timer = threading.Timer(
+            float(self.heartbeat_frequency),
+            self.send_heartbeat
+        )
 
     def send_udp_message(self, frame) -> None:
         """
