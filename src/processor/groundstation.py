@@ -1,4 +1,6 @@
 """Groundstation connection"""
+from typing import Tuple, Union
+
 import pickle
 import socket as s
 import threading
@@ -11,12 +13,12 @@ class Groundstation:
     """
     This class establishes the connection between groundstation and raspberry pi.
     """
+    
+    tcp_socket: Union[s.socket, None] = None
+    udp_socket: Union[s.socket, None] = None
 
-    tcp_socket: s.socket
-    udp_socket: s.socket
-
-    query_addr: tuple[str, int]
-    stream_addr: tuple[str, int]
+    query_addr: Tuple[str, int]
+    stream_addr: Tuple[str, int]
 
     running: bool = True     # This will terminate connection loop if False
     connected: bool = False  # This will prevent stream through UDP if False
@@ -64,8 +66,10 @@ class Groundstation:
 
         self.running = False
         self.connected = False
-        self.tcp_socket.close()
-        self.udp_socket.close()
+        if self.tcp_socket is not None:
+            self.tcp_socket.close()
+        if self.udp_socket is not None:
+            self.udp_socket.close()
 
         if self.heartbeat_timer is not None:
             self.heartbeat_timer.cancel()
@@ -144,4 +148,6 @@ class Groundstation:
         """
 
         self.connected = False
-        self.udp_socket.close()
+        
+        if self.udp_socket is not None:
+            self.udp_socket.close()

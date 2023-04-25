@@ -1,8 +1,10 @@
-from . import properties
+from typing import Tuple
 
 import tkinter
 import numpy as np
 import colorsys
+
+from . import properties
 
 
 class Windowed(properties.Properties):
@@ -94,7 +96,7 @@ class Windowed(properties.Properties):
         upper_v.pack(side=tkinter.LEFT)
     
         # Utilities
-        def get_upper_hsv() -> tuple[float, float, float]:
+        def get_upper_hsv() -> Tuple[float, float, float]:
             """
             Returns upper HSV variables.
             :return: Upper hsv slider variables.
@@ -102,7 +104,7 @@ class Windowed(properties.Properties):
 
             return upper_h.get(), upper_s.get(), upper_v.get()
     
-        def get_lower_hsv() -> tuple[float, float, float]:
+        def get_lower_hsv() -> Tuple[float, float, float]:
             """
             Returns lower HSV variables.
             :return: Lower hsv slider variables.
@@ -183,7 +185,7 @@ class Windowed(properties.Properties):
         col_box_vertical_offset_sb = tkinter.Spinbox(col_box_vertical_offset_panel, from_=-300, to=300)
         col_box_vertical_offset_sb.pack()
         
-        def get_collision_box_data() -> tuple[int, int, int, int]:
+        def get_collision_box_data() -> Tuple[int, int, int, int]:
             """
             Returns collision box data.
             """

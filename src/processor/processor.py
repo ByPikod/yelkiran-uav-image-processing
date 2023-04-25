@@ -1,4 +1,6 @@
 """Image processing."""
+from typing import Tuple
+
 import datetime
 import threading
 import os
@@ -77,7 +79,10 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
             # Simulator Mode.
             print("Binder: Simulator")
             print("Connecting to the server...")
-            self.bindings = binder.Simulator(config.get_string("simulator.host"), config.get_int("simulator.port"))
+            self.bindings = binder.Simulator(
+                config.get_string("simulator.host"), 
+                config.get_int("simulator.port")
+            )
         elif mode == "file":
             # File Mode
             print("Binder: File")
@@ -132,7 +137,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         else:
             self.start_loop()
 
-    def get_capture_size(self) -> tuple[int, int]:
+    def get_capture_size(self) -> Tuple[int, int]:
         """
         Returns the size of the 'self.capture'
         :return: (Width, Height)
@@ -141,7 +146,14 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         frame_width = int(self.capture.get(3))
         frame_height = int(self.capture.get(4))
         return frame_width, frame_height
-
+    
+    def safe_exit(self) -> None:
+        """
+        Ensure all the threads are terminated.
+        """
+        
+        self.groundstation.terminate()
+    
     def start_loop(self) -> None:
         """
         Main loop for image processing.
@@ -209,6 +221,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         print("Window loop starting.")
         mainloop()
         self.properties.app.mainloop()
+        self.safe_exit()
 
     def process(self) -> None:
         """

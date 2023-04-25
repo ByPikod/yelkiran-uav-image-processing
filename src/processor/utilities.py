@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import cv2
 
 import numpy as np
@@ -5,9 +7,9 @@ import numpy as np
 
 def draw_square(
         frame: np.ndarray,
-        start: tuple[int, int],
-        end: tuple[int, int],
-        color: tuple[int, int, int],
+        start: Tuple[int, int],
+        end: Tuple[int, int],
+        color: Tuple[int, int, int],
         thickness: int
 ) -> None:
     """
