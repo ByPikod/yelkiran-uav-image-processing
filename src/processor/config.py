@@ -66,7 +66,7 @@ class ConfigUtil:
 
         # Read data
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        self.conf_path = os.path.join(root_dir, "configuration.ini")
+        self.conf_path = os.path.join(root_dir, "../configuration.ini")
         self.config_parser.read(self.conf_path)
 
         # Write data

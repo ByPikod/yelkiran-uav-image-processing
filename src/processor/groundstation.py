@@ -8,6 +8,8 @@ import time
 
 import cv2
 
+from .utilities import PeriodicTimer
+
 
 class Groundstation:
     """
@@ -25,7 +27,9 @@ class Groundstation:
     next_try: int = 0
     heartbeat_frequency: int = 3
 
-    heartbeat_timer: threading.Timer = None
+    heartbeat_timer: Tuple[PeriodicTimer, None] = None
+    reconnect_timer: Tuple[PeriodicTimer, None] = None
+    listen_tcp_timer: Tuple[PeriodicTimer, None] = None
 
     def __init__(self, host: str, query_port: int, stream_port: int) -> None:
         self.query_addr = (host, query_port)
@@ -37,27 +41,34 @@ class Groundstation:
         """
         Re-establish connection everytime connection is broken and receive messages.
         """
-        while self.running:
 
-            # Connect server
-            self.tcp_socket = s.socket(s.AF_INET, s.SOCK_STREAM)
-            try:
-                self.tcp_socket.connect(self.query_addr)
-            except Exception as e:
-                print(f"Failed to connect groundstation: {e}")
-                print(f"Trying again in 3 seconds...")
-                self.tcp_socket.close()
-                time.sleep(3)
-                continue
+        # Connect server
+        self.tcp_socket = s.socket(s.AF_INET, s.SOCK_STREAM)
+        try:
+            self.tcp_socket.connect(self.query_addr)
+        except Exception as e:
+            print(f"Failed to connect groundstation: {e}")
+            print(f"Trying again in 3 seconds...")
+            self.tcp_socket.close()
+            
+            if self.running:
+                self.reconnect_timer = PeriodicTimer(3.0, 0.1, self.initialize_conn)
+                self.reconnect_timer.start()
+                
+            return
 
-            # Successfully connected
-            self.on_tcp_established()
-            # Start sending heartbeats
+        # Successfully connected
+        self.on_tcp_established()
+        # Start sending heartbeats
 
-            # Listen server
-            self.listen_tcp()
-            # Connection terminated due to an error.
-            self.on_tcp_terminated()
+        # Listen server
+        self.listen_tcp()
+        # Connection terminated due to an error.
+        self.on_tcp_terminated()
+        
+        if self.running:
+            self.reconnect_timer = PeriodicTimer(3.0, 0.1, self.initialize_conn)
+            self.reconnect_timer.start()
 
     def terminate(self) -> None:
         """
@@ -73,6 +84,10 @@ class Groundstation:
 
         if self.heartbeat_timer is not None:
             self.heartbeat_timer.cancel()
+        if self.reconnect_timer is not None:
+            self.reconnect_timer.cancel()
+        if self.listen_tcp_timer is not None:
+            self.listen_tcp_timer.cancel()
 
     def listen_tcp(self) -> None:
         """
@@ -85,11 +100,9 @@ class Groundstation:
             try:
                 data = self.tcp_socket.recv(1024)
             except Exception as e:
-                self.tcp_socket.close()
                 print(f"Unable to maintain ground station connection: {e}")
                 print("Trying to re-establish connection in 3 seconds.")
-                time.sleep(3)
-                break
+                return
 
             self.on_tcp_message(data)
 
@@ -97,10 +110,12 @@ class Groundstation:
         if not self.running:
             return
         self.tcp_socket.send(b"heartbeat")
-        self.heartbeat_timer = threading.Timer(
+        self.heartbeat_timer = PeriodicTimer(
             float(self.heartbeat_frequency),
+            0.1,
             self.send_heartbeat
         )
+        self.heartbeat_timer.start()
 
     def send_udp_message(self, frame) -> None:
         """
@@ -140,6 +155,13 @@ class Groundstation:
 
         self.udp_socket = s.socket(s.AF_INET, s.SOCK_DGRAM)
         self.connected = True
+        self.heartbeat_timer = PeriodicTimer(
+            float(self.heartbeat_frequency),
+            0.1,
+            self.send_heartbeat
+        )
+        self.heartbeat_timer.start()
+        
         print("Connection with the ground station has successfully established!")
 
     def on_tcp_terminated(self) -> None:
@@ -147,6 +169,7 @@ class Groundstation:
         Triggered when tcp connection is broken.
         """
 
+        self.tcp_socket.close()
         self.connected = False
         
         if self.udp_socket is not None:

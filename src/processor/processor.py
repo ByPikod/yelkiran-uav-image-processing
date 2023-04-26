@@ -132,10 +132,12 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
 
             # Create window loop in another thread
             self.tkinter_loop()
-            self.continue_processing = False
-
+            self.safe_exit()
         else:
-            self.start_loop()
+            try: 
+                self.start_loop()
+            except KeyboardInterrupt:
+                self.safe_exit()
 
     def get_capture_size(self) -> Tuple[int, int]:
         """
@@ -152,6 +154,7 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         Ensure all the threads are terminated.
         """
         
+        self.continue_processing = False
         self.groundstation.terminate()
     
     def start_loop(self) -> None:
@@ -221,7 +224,6 @@ Logging:\t{'Enabled' if self.logging else 'Disabled'}"""
         print("Window loop starting.")
         mainloop()
         self.properties.app.mainloop()
-        self.safe_exit()
 
     def process(self) -> None:
         """
